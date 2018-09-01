@@ -1,0 +1,20 @@
+# /etc/systemd/system/notrust-track.service
+
+[Unit]
+Description=Monitor all network connections by user and processes
+
+[Service]
+Type=simple
+WorkingDirectory=/etc/notrust-track
+ExecStart=/usr/sbin/notrust-track
+ExecReload=/bin/kill -HUP $MAINPID
+KillMode=processes
+Restart=on-failure
+# For this to work we need to have the CAP_NET_ADMIN and CAP_DAC_READ_SEARCH, CAP_SYS_PTRACE
+# We can use:
+# > sudo setcap 'cap_sys_ptrace,cap_net_admin,cap_dac_read_search=+ep' ./main`
+User=root
+Group=root
+
+[Install]
+WantedBy=multi-user.target
