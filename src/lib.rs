@@ -22,26 +22,39 @@ extern crate log;
 extern crate core;
 extern crate users;
 extern crate procfs;
+extern crate syslog;
+extern crate sys_info;
 
 #[macro_use]
 extern crate serde_derive;
 extern crate serde;
 extern crate serde_json;
+extern crate serde_yaml;
+
+extern crate tempfile;
 
 use std::sync::mpsc::Sender;
 use std::sync::mpsc::Receiver;
 use std::sync::mpsc::channel;
 use std::thread;
+use std::fs::File;
+use std::io::prelude::*;
+
 
 use parser::Parser;
 use conn_track::Conntrack;
-
+use outputs::OutputsConfig;
 
 mod conn_track;
 mod proc_chomper;
 mod parser;
 mod proc;
+pub mod outputs;
 
+#[derive(Debug, Serialize, Deserialize)]
+pub struct Config {
+    pub outputs : OutputsConfig
+}
 
 #[derive(Debug, Serialize)]
 pub enum Protocol {
@@ -49,29 +62,153 @@ pub enum Protocol {
     TCP,
 }
 
+#[derive(Debug, Serialize)]
+pub enum State {
+    New,
+    Destroy,
+    Unknown,
+}
 
-pub fn run() -> Result<(), String>{
-    let mut tracker=  match Conntrack::new() {
-        Ok(x) => x,
-        Err(_err) => return Err(String::from("Unable to bind to conntrack, please check permissions")),
-    };
+pub struct NoTrack {
+    config : Config,
+    outputs : Vec<Box<outputs::Output>>,
+}
 
-    let mut parser = match Parser::new() {
-        Ok(x) => x,
-        Err(_err) => return Err(String::from("Unable to parse process descriptors, please check permissions")),
-    };
+impl NoTrack {
+    pub fn from_str(config: &str) -> Result<NoTrack, String> {
+        let config : Config = match serde_yaml::from_str(config) {
+            Ok(x) => x,
+            Err(_err) => return Err(String::from("unable to parse config")),
+        };
 
-    let (mut tx, rx) : (Sender<conn_track::Connection>, Receiver<conn_track::Connection>) = channel();
-
-    thread::spawn(move || {
-        tracker.start(&mut tx);
-    });
-
-    loop {
-        let con : conn_track::Connection = rx.recv().unwrap();
-        if let Some(payload) = parser.parse(con) {
-            let json = serde_json::to_string(&payload).unwrap();
-            println!("{}", json);
-        }
+        NoTrack::new(config)
     }
+
+    pub fn from_file(name: &str) -> Result<NoTrack, String> {
+        let mut file = match File::open(name) {
+            Ok(x) => x,
+            Err(_err) => return Err(String::from("unable to open config file")),
+        };
+
+        let mut contents = String::new();
+        if let Err(_) = file.read_to_string(&mut contents) {
+            return Err(String::from("unable to read config file"));
+        }
+
+        NoTrack::from_str(&contents)
+    }
+
+    pub fn new(config: Config) -> Result<NoTrack, String> {
+        let outputs = outputs::create(&config.outputs)?;
+        Ok(NoTrack {
+            config : config,
+            outputs :  outputs
+        })
+    }
+
+    pub fn run(&mut self) -> Result<(), String> {
+        let mut tracker=  match Conntrack::new() {
+            Ok(x) => x,
+            Err(_err) => return Err(String::from("unable to bind to conntrack, please check permissions")),
+        };
+
+        let mut parser = match Parser::new() {
+            Ok(x) => x,
+            Err(_err) => return Err(String::from("unable to parse process descriptors, please check permissions")),
+        };
+
+        let (mut tx, rx) : (Sender<conn_track::Connection>, Receiver<conn_track::Connection>) = channel();
+
+        thread::spawn(move || {
+            tracker.start(&mut tx);
+        });
+
+        loop {
+            if let Ok(con) = rx.recv() {
+                debug!("recieved {:?} from channel, parsing", con);
+                if let Some(payload) = parser.parse(con) {
+                    let json = serde_json::to_string(&payload).unwrap();
+                    debug!("created json payload: {}", json);
+                    for output in &mut self.outputs {
+                        output.process(&json);
+                    }
+                } else {
+                    debug!("recieved none, dropping packet");
+                }
+            } else {
+                warn!("closing application");
+                break;
+            }
+        }
+
+        Ok(())
+    }
+
+
+    pub fn dump_config(&self) -> Result<(), String> {
+        dump_config(&self.config)
+    }
+
+}
+
+pub fn dump_config(config: &Config) -> Result<(), String> {
+    let config = match serde_yaml::to_string(config) {
+        Ok(x) => x,
+        Err(_err) => return Err(String::from("Unable to dump config!")),
+    };
+
+    println!("{}", config);
+
+    Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn config_string() -> String {
+        let string = String::from("---\n  outputs:\n    syslog:\n     - Localhost");
+
+        return string;
+    }
+
+    #[test]
+    fn test_dump_config_success() {
+        let config = Config {
+            outputs : OutputsConfig {
+                syslog : Vec::new()
+            }
+        };
+
+        assert!(!dump_config(&config).is_err());
+    }
+
+    #[test]
+    fn test_from_str_fail() {
+        assert!(NoTrack::from_str("").is_err());
+    }
+
+    #[test]
+    fn test_from_str_success() {
+        let string = "---\n  outputs:\n    syslog:\n     - Localhost";
+
+        assert!(!NoTrack::from_str(string).is_err());
+    }
+
+    #[test]
+    fn test_from_file_fail() {
+        let temp_file = tempfile::NamedTempFile::new().unwrap();
+        let file = temp_file.path().to_str().unwrap();
+        assert!(NoTrack::from_file(file).is_err());
+    }
+
+    #[test]
+    fn test_from_file_success() {
+        let temp_file = tempfile::NamedTempFile::new().unwrap();
+        let path = temp_file.path().to_str().unwrap();
+
+        write!(&temp_file, "{}", config_string()).unwrap();
+        assert!(!NoTrack::from_file(path).is_err());
+    }
+
 }

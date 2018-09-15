@@ -1,0 +1,10 @@
+---
+outputs:
+  syslog:
+    - Localhost
+#    - TCP:
+#        address: 127.0.0.1
+#        port: 601
+#    - UDP:
+#        address: 127.0.0.1
+#        port: 514

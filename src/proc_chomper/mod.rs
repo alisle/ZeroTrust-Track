@@ -121,18 +121,18 @@ fn parse_connection(line: &str) -> Option<SocketConnection> {
     for(count, item) in split.iter().enumerate() {
         match count {
             1 => {
-                let tuple = split_address(item);
-                let address = u32::from_be(u32::from_str_radix(&tuple.0, 16).unwrap());
-
-                local_address = Ipv4Addr::from(address);
-                local_port = u16::from_str_radix(&tuple.1, 16).unwrap();
+                if let Some(tuple) = split_address(item) {
+                    let address = u32::from_be(u32::from_str_radix(&tuple.0, 16).unwrap());
+                    local_address = Ipv4Addr::from(address);
+                    local_port = u16::from_str_radix(&tuple.1, 16).unwrap();
+                }
             },
             2 => {
-                let tuple = split_address(item);
-                let address = u32::from_be(u32::from_str_radix(&tuple.0, 16).unwrap());
-
-                remote_address = Ipv4Addr::from(address);
-                remote_port = u16::from_str_radix(&tuple.1, 16).unwrap();
+                if let Some(tuple) = split_address(item) {
+                    let address = u32::from_be(u32::from_str_radix(&tuple.0, 16).unwrap());
+                    remote_address = Ipv4Addr::from(address);
+                    remote_port = u16::from_str_radix(&tuple.1, 16).unwrap();
+                }
             },
             7 => { uid = item.parse().unwrap(); },
             9 => { inode = item.parse().unwrap(); },
@@ -150,9 +150,60 @@ fn parse_connection(line: &str) -> Option<SocketConnection> {
     })
 }
 
-fn split_address(pair : &str) -> (String, String) {
+fn split_address(pair : &str) -> Option<(String, String)> {
     let tuple = pair.split(":");
     let tuple = tuple.collect::<Vec<&str>>();
 
-    (String::from(tuple[0]), String::from(tuple[1]))
+    if tuple.len() < 2 {
+        return None;
+    }
+
+    Some((String::from(tuple[0]), String::from(tuple[1])))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_split_address_failure() {
+        let tuple = split_address("I have no breaks");
+        assert!(!tuple.is_some())
+    }
+
+    #[test]
+    fn test_split_address_success() {
+        let tuple = split_address("I have:breaks");
+        match tuple {
+            Some(tuple) => {
+                assert_eq!("I have", tuple.0);
+                assert_eq!("breaks", tuple.1);
+            },
+            None => {
+                assert!(tuple.is_some());
+            }
+        }
+
+
+    }
+
+    #[test]
+    fn test_parse_connection_success() {
+        let string = "   3: 669010AC:0016 019010AC:D575 01 00000000:00000000 02:000577BD 00000000     0        0 1227937 2 0000000000000000 20 4 25 2 2                    ";
+        let payload = parse_connection(string);
+        match payload {
+            Some(payload) => {
+                assert_eq!(payload.local_address, Ipv4Addr::new(172,16,144,102));
+                assert_eq!(payload.local_port, 22);
+                assert_eq!(payload.remote_address, Ipv4Addr::new(172,16,144,1));
+                assert_eq!(payload.remote_port, 54645);
+                assert_eq!(payload.uid, 0);
+                assert_eq!(payload.inode, 1227937);
+            },
+            None => {
+                assert!(payload.is_some());
+            }
+        }
+
+    }
 }

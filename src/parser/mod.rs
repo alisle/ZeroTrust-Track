@@ -22,13 +22,14 @@ use std::u32;
 use users::{Users, UsersCache};
 
 use proc_chomper::{ProcChomper};
-use super::Protocol;
+use super::{ Protocol, State };
 use proc::{Proc};
 use conn_track;
 
 
 #[derive(Debug, Serialize)]
 pub struct Payload {
+    pub state : State,
     pub protocol : Protocol,
     pub source: Ipv4Addr,
     pub destination : Ipv4Addr,
@@ -36,10 +37,15 @@ pub struct Payload {
     pub destination_port : u16,
     pub username : String,
     pub uid : u16,
-    pub inode : u32,
-    pub pid : u32,
+    pub program_details : Option<Program>,
+}
+
+#[derive(Debug, Serialize)]
+pub struct Program {
+    pub inode: u32,
+    pub pid: u32,
     pub process_name : String,
-    pub command_line: Vec<String>
+    pub command_line : Vec<String>,
 }
 
 pub struct Parser {
@@ -65,18 +71,18 @@ impl Parser {
     }
 
     pub fn parse(&mut self, con : conn_track::Connection) -> Option<Payload> {
+        let state = con.state;
+
         match con.details.protocol {
-            conn_track::ProtoDetails::IP{ protocol, source_port, destination_port } => {
-                self.parse_ip_connection(protocol, con.details.source, con.details.destination, source_port, destination_port)
-            },
+            conn_track::ProtoDetails::IP{ protocol, source_port, destination_port } => self.parse_ip_connection(state, protocol, con.details.source, con.details.destination, source_port, destination_port),
             _ => {
-                println!("Unsupported packet type");
+                debug!("protocol isn't IP, dropping it");
                 None
-            }
+            },
         }
     }
 
-    fn parse_ip_connection(&mut self, protocol: Protocol, source : Ipv4Addr, destination : Ipv4Addr, source_port : u16, destination_port : u16) -> Option<Payload> {
+    fn parse_ip_connection(&mut self, state: State, protocol: Protocol, source : Ipv4Addr, destination : Ipv4Addr, source_port : u16, destination_port : u16) -> Option<Payload> {
         let chomper =  match protocol {
             Protocol::UDP => &self.udp_chomper,
             Protocol::TCP => &self.tcp_chomper,
@@ -104,33 +110,40 @@ impl Parser {
             }
         }
 
-        if inode == <u32>::max_value() {
-            None
-        } else {
-            match self.proc.get(inode) {
-                Some(process) => {
-                    let pid : u32 = process.stat.pid as u32;
-                    let process_name = process.stat.comm.clone();
-                    let command_line = process.cmdline().unwrap();
+        let program_details = match inode == <u32>::max_value() {
+            true => None,
+            false => {
+                match self.proc.get(inode) {
+                    Some(process) => {
+                        let pid : u32 = process.stat.pid as u32;
+                        let process_name = process.stat.comm.clone();
+                        let command_line = process.cmdline().unwrap();
 
-                    Some(Payload {
-                        protocol,
-                        source,
-                        destination,
-                        source_port,
-                        destination_port,
-                        username,
-                        uid,
-                        inode,
-                        pid,
-                        process_name,
-                        command_line
-                    })
-                },
-                None => None
+                        Some(Program {
+                            inode,
+                            pid,
+                            process_name,
+                            command_line
+                        })
+                    },
+                    None => {
+                        None
+                    }
+                }
             }
+        };
 
-        }
+        Some(Payload {
+            state,
+            protocol,
+            source,
+            destination,
+            source_port,
+            destination_port,
+            username,
+            uid,
+            program_details,
+        })
     }
 
 }

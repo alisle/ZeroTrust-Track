@@ -27,14 +27,9 @@ use mnl::linux::netfilter::nfnetlink_conntrack as conntrack;
 use mnl::linux::netfilter::nfnetlink as nfnetlink;
 use std::sync::mpsc::Sender;
 
-use super::Protocol;
+use super::{Protocol, State};
 
-#[derive(Debug)]
-pub enum State {
-    New,
-    Destroy,
-    Unknown,
-}
+
 
 #[derive(Debug)]
 pub enum ProtoDetails {
@@ -229,6 +224,7 @@ fn process_data_callback(message : mnl::Nlmsg, sender: &mut Sender<Connection>) 
         _ => { State::Unknown }
     };
 
+    debug!("state: {:?}", state);
 
     let _ = message.parse(size_of::<nfnetlink::Nfgenmsg>(), process_attributes_callback, &mut buf);
     let details = extract_tuple(buf[conntrack::CtattrType::TUPLE_ORIG as usize].unwrap());
@@ -237,6 +233,7 @@ fn process_data_callback(message : mnl::Nlmsg, sender: &mut Sender<Connection>) 
         details
     };
 
+    debug!("sending {:?} over channel", connection);
     if let Err(x) = sender.send(connection) {
         // Handle error.
         error!("unable to send connection details {:?}", x);

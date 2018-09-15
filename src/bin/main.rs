@@ -14,10 +14,45 @@
  *
  */
 
+extern crate clap;
 extern crate notrust_track;
+extern crate simple_logger;
+
+use clap::{Arg, App};
+use notrust_track::{NoTrack};
 
 fn main() {
-    if let Err(err) = notrust_track::run() {
+    simple_logger::init().unwrap();
+
+    let matches = App::new("NoTrust Tracker")
+        .version("1.0")
+        .author("Alex Lisle <alex.lisle@gmail.com>")
+        .about("Tracks all incoming and outgoing TCP/UDP Connections and their corresponding processes and users who launched them")
+        .arg(Arg::with_name("config")
+            .short("c")
+            .long("config")
+            .value_name("FILE")
+            .help("Defines a custom config file")
+            .takes_value(true)
+            .required(false)
+        ).get_matches();
+
+    let config = matches.value_of("config").unwrap_or("/etc/notrust-tracker/config.yaml");
+    println!("loading config: {}", config);
+
+    let mut app = match NoTrack::from_file(&config) {
+        Ok(app) => app,
+        Err(err) => {
+            println!("ERROR: {}", err);
+            return;
+        },
+    };
+
+    println!("config:\n");
+    let _ = app.dump_config();
+
+    if let Err(err) = app.run() {
         println!("ERROR: {}", err);
     }
+
 }
