@@ -37,7 +37,7 @@ fn main() {
             .required(false)
         ).get_matches();
 
-    let config = matches.value_of("config").unwrap_or("/etc/notrust-tracker/config.yaml");
+    let config = matches.value_of("config").unwrap_or("/etc/notrust/config.yaml");
     println!("loading config: {}", config);
 
     let mut app = match NoTrack::from_file(&config) {

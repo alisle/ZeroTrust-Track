@@ -3,6 +3,9 @@ name = "notrust-track"
 version = "0.1.0"
 authors = ["Alex Lisle <alex.lisle@gmail.com>"]
 license-file = "LICENSE"
+description = "Userland Daemon which tracks all incoming and outgoing connections along with their corresponding user and process details"
+readme = "README.md"
+
 
 [dependencies]
 crslmnl = "0.2"
@@ -21,3 +24,23 @@ serde_json = "1.0"
 serde_yaml = "^0.8"
 
 tempfile = "^3"
+
+[package.metadata.deb]
+maintainer = "Alex Lisle <alex.lisle@gmail.com>"
+copyright = "2018, Alexander David Lisle <alex.lisle@gmail.com>"
+depends = "$auto"
+section = "security"
+priority = "optional"
+license-file = ["LICENSE", "0"]
+extended-description = """\
+NoTrust-Track is a userland daemon which monitors all incoming and outgoing TCP and UDP connections,
+when a connection is started or shutdown it reports what process created the socket along with it's
+arguments along side the user details who the process belongs to.
+
+NoTrack-Track can be configured to report through UDP, TCP or local Syslog currently.
+"""
+assets = [
+  [ "target/release/notrust-track", "/usr/sbin/notrust-track", "0555" ],
+  [ "install_scripts/default_config/config.yaml", "/etc/notrust/config.yaml", "0644"],
+  [ "install_scripts/systemd/notrust-track.service", "/usr/share/notrust/systemd/notrust-track.service", "0644"],
+]
