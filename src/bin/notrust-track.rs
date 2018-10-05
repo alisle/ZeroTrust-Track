@@ -18,6 +18,9 @@ extern crate clap;
 extern crate notrust_track;
 extern crate simple_logger;
 
+#[macro_use]
+extern crate log;
+
 use clap::{Arg, App};
 use notrust_track::{NoTrack};
 
@@ -38,21 +41,18 @@ fn main() {
         ).get_matches();
 
     let config = matches.value_of("config").unwrap_or("/etc/notrust/config.yaml");
-    println!("loading config: {}", config);
+    info!("loading config: {}", config);
 
     let mut app = match NoTrack::from_file(&config) {
         Ok(app) => app,
         Err(err) => {
-            println!("ERROR: {}", err);
+            error!("{}", err);
             return;
         },
     };
 
-    println!("config:\n");
-    let _ = app.dump_config();
-
     if let Err(err) = app.run() {
-        println!("ERROR: {}", err);
+        error!("{}", err);
     }
 
 }

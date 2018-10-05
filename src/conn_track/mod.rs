@@ -80,6 +80,7 @@ impl<'a> Conntrack<'a> {
         loop {
             let recv = self.socket.recvfrom(&mut buf)
                 .unwrap_or_else(|errno| panic!("failed to recieve from conntrack! {}", errno));
+            trace!("received connection update");
 
             mnl::cb_run(&buf[0..recv], 0, 0, Some(process_data_callback), tx)
                 .unwrap_or_else(|errno| panic!("failed to invoke callback! {}", errno));
@@ -224,7 +225,7 @@ fn process_data_callback(message : mnl::Nlmsg, sender: &mut Sender<Connection>) 
         _ => { State::Unknown }
     };
 
-    debug!("state: {:?}", state);
+    trace!("state: {:?}", state);
 
     let _ = message.parse(size_of::<nfnetlink::Nfgenmsg>(), process_attributes_callback, &mut buf);
     let details = extract_tuple(buf[conntrack::CtattrType::TUPLE_ORIG as usize].unwrap());

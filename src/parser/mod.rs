@@ -76,7 +76,7 @@ impl Parser {
         match con.details.protocol {
             conn_track::ProtoDetails::IP{ protocol, source_port, destination_port } => self.parse_ip_connection(state, protocol, con.details.source, con.details.destination, source_port, destination_port),
             _ => {
-                debug!("protocol isn't IP, dropping it");
+                trace!("protocol isn't IP, dropping it");
                 None
             },
         }

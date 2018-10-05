@@ -2,9 +2,17 @@
 outputs:
   syslog:
     - Localhost
+  elasticsearch: "http://172.16.144.1:9200/track"
+# If this is set to true it will include all connections, including multicast
+include_non_process_connections: false
+
+# If this is set to true we show connections to and from 53 and 5353, normally this generates
+# alot of noise.
+include_dns_request: false
+
 #    - TCP:
 #        address: 127.0.0.1
-#        port: 601
+4r#        port: 601
 #    - UDP:
 #        address: 127.0.0.1
 #        port: 514

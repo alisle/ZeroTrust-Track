@@ -24,6 +24,7 @@ extern crate users;
 extern crate procfs;
 extern crate syslog;
 extern crate sys_info;
+extern crate reqwest;
 
 #[macro_use]
 extern crate serde_derive;
@@ -53,7 +54,9 @@ pub mod outputs;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Config {
-    pub outputs : OutputsConfig
+    pub outputs : OutputsConfig,
+    pub include_non_process_connections : bool,
+    pub include_dns_request : bool,
 }
 
 #[derive(Debug, Serialize)]
@@ -62,7 +65,7 @@ pub enum Protocol {
     TCP,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, PartialEq)]
 pub enum State {
     New,
     Destroy,
@@ -78,7 +81,10 @@ impl NoTrack {
     pub fn from_str(config: &str) -> Result<NoTrack, String> {
         let config : Config = match serde_yaml::from_str(config) {
             Ok(x) => x,
-            Err(_err) => return Err(String::from("unable to parse config")),
+            Err(err) => {
+                println!("Unable to parse config: {}", err);
+                return Err(String::from("unable to parse config"));
+            }
         };
 
         NoTrack::new(config)
@@ -120,17 +126,32 @@ impl NoTrack {
         let (mut tx, rx) : (Sender<conn_track::Connection>, Receiver<conn_track::Connection>) = channel();
 
         thread::spawn(move || {
+            info!("starting conntrack");
             tracker.start(&mut tx);
         });
 
+        info!("starting main loop");
         loop {
             if let Ok(con) = rx.recv() {
-                debug!("recieved {:?} from channel, parsing", con);
+                trace!("recieved {:?} from channel, parsing", con);
                 if let Some(payload) = parser.parse(con) {
-                    let json = serde_json::to_string(&payload).unwrap();
-                    debug!("created json payload: {}", json);
-                    for output in &mut self.outputs {
-                        output.process(&json);
+                    if  ! self.config.include_non_process_connections &&
+                        payload.program_details.is_none() &&
+                        payload.state == State::New
+                    {
+                        debug!("dropping payload as it doesn't include process information");
+                    } else {
+                        if ! self.config.include_dns_request &&
+                            ( payload.destination_port == 53 || payload.destination_port == 5353)
+                        {
+                            debug!("dropping payload as it's a DNS request");
+                        } else {
+                            let json = serde_json::to_string(&payload).unwrap();
+                            trace!("created json payload: {}", json);
+                            for output in &mut self.outputs {
+                                output.process(&json);
+                            }
+                        }
                     }
                 } else {
                     debug!("recieved none, dropping packet");
@@ -167,8 +188,7 @@ mod tests {
     use super::*;
 
     fn config_string() -> String {
-        let string = String::from("---\n  outputs:\n    syslog:\n     - Localhost");
-
+        let string = String::from("---\noutputs:\n  syslog: []\ninclude_non_process_connections: false\ninclude_dns_request: false");
         return string;
     }
 
@@ -176,9 +196,13 @@ mod tests {
     fn test_dump_config_success() {
         let config = Config {
             outputs : OutputsConfig {
-                syslog : Vec::new()
-            }
+                syslog : Vec::new(),
+                elasticsearch : None,
+            },
+            include_non_process_connections: false,
+            include_dns_request: false,
         };
+
 
         assert!(!dump_config(&config).is_err());
     }
@@ -190,9 +214,8 @@ mod tests {
 
     #[test]
     fn test_from_str_success() {
-        let string = "---\n  outputs:\n    syslog:\n     - Localhost";
-
-        assert!(!NoTrack::from_str(string).is_err());
+        let string = config_string();
+        assert!(!NoTrack::from_str(&string).is_err());
     }
 
     #[test]

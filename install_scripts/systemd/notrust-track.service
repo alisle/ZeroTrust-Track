@@ -11,12 +11,9 @@ ExecStart=/usr/sbin/notrust-track
 ExecReload=/bin/kill -HUP $MAINPID
 KillMode=process
 Restart=on-failure
-User=root
-Group=root
+User=notrust
+Group=notrust
 
+# We require ip_conntrack module to be loaded.
 [Install]
 WantedBy=multi-user.target
-
-# For this to work we need to have the CAP_NET_ADMIN and CAP_DAC_READ_SEARCH, CAP_SYS_PTRACE
-# We can use:
-# > sudo setcap 'cap_sys_ptrace,cap_net_admin,cap_dac_read_search=+ep' ./main`
