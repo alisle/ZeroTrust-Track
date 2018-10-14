@@ -22,7 +22,7 @@ use std::u32;
 use users::{Users, UsersCache};
 
 use proc_chomper::{ProcChomper};
-use super::{ Protocol, State };
+use enums::{ Protocol, State };
 use proc::{Proc};
 use conn_track;
 

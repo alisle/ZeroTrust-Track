@@ -83,12 +83,6 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_invalid_url() {
-        let elasticsearch = Elasticsearch::new("I am an invalid URL");
-        assert!(elasticsearch.is_err());
-    }
-
-    #[test]
     fn test_valid_url() {
         let elasticsearch = Elasticsearch::new("http://127.0.0.1:9200");
         assert!(!elasticsearch.is_err());

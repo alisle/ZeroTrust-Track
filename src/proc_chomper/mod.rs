@@ -22,7 +22,7 @@ use std::net::Ipv4Addr;
 use std::collections::HashMap;
 use std::cell::RefCell;
 
-use super::Protocol;
+use enums::Protocol;
 
 pub static TCP_LIST: &'static  str = "/proc/net/tcp";
 pub static UDP_LIST: &'static str = "/proc/net/udp";

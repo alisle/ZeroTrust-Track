@@ -27,7 +27,7 @@ use mnl::linux::netfilter::nfnetlink_conntrack as conntrack;
 use mnl::linux::netfilter::nfnetlink as nfnetlink;
 use std::sync::mpsc::Sender;
 
-use super::{Protocol, State};
+use enums::{Protocol, State};
 
 
 
@@ -68,7 +68,7 @@ pub struct Conntrack<'a> {
 impl<'a> Conntrack<'a> {
     pub fn new() -> Result<Conntrack<'a>, io::Error> {
         let nl =  mnl::Socket::open(netlink::Family::NETFILTER)?;
-        nl.bind(conntrack::NF_NETLINK_CONNTRACK_NEW | conntrack::NF_NETLINK_CONNTRACK_DESTROY, mnl::SOCKET_AUTOPID)?;
+        nl.bind(conntrack::NF_NETLINK_CONNTRACK_NEW, mnl::SOCKET_AUTOPID)?;  //| conntrack::NF_NETLINK_CONNTRACK_DESTROY, mnl::SOCKET_AUTOPID)?;
 
         Ok(Conntrack {
             socket: nl,

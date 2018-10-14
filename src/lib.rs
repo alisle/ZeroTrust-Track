@@ -25,6 +25,7 @@ extern crate procfs;
 extern crate syslog;
 extern crate sys_info;
 extern crate reqwest;
+extern crate simple_logger;
 
 #[macro_use]
 extern crate serde_derive;
@@ -42,38 +43,25 @@ use std::fs::File;
 use std::io::prelude::*;
 
 
-use parser::Parser;
+use parser::{ Parser };
 use conn_track::Conntrack;
-use outputs::OutputsConfig;
+
+use enums::{ Config };
+use filters::{ Filter };
 
 mod conn_track;
 mod proc_chomper;
 mod parser;
 mod proc;
+
 pub mod outputs;
+pub mod enums;
+pub mod filters;
 
-#[derive(Debug, Serialize, Deserialize)]
-pub struct Config {
-    pub outputs : OutputsConfig,
-    pub include_non_process_connections : bool,
-    pub include_dns_request : bool,
-}
-
-#[derive(Debug, Serialize)]
-pub enum Protocol {
-    UDP,
-    TCP,
-}
-
-#[derive(Debug, Serialize, PartialEq)]
-pub enum State {
-    New,
-    Destroy,
-    Unknown,
-}
 
 pub struct NoTrack {
     config : Config,
+    filter: Filter,
     outputs : Vec<Box<outputs::Output>>,
 }
 
@@ -106,9 +94,12 @@ impl NoTrack {
 
     pub fn new(config: Config) -> Result<NoTrack, String> {
         let outputs = outputs::create(&config.outputs)?;
+        let filter = Filter::new(config.filters)?;
+
         Ok(NoTrack {
             config : config,
-            outputs :  outputs
+            outputs :  outputs,
+            filter: filter,
         })
     }
 
@@ -130,27 +121,17 @@ impl NoTrack {
             tracker.start(&mut tx);
         });
 
+
         info!("starting main loop");
         loop {
             if let Ok(con) = rx.recv() {
                 trace!("recieved {:?} from channel, parsing", con);
                 if let Some(payload) = parser.parse(con) {
-                    if  ! self.config.include_non_process_connections &&
-                        payload.program_details.is_none() &&
-                        payload.state == State::New
-                    {
-                        debug!("dropping payload as it doesn't include process information");
-                    } else {
-                        if ! self.config.include_dns_request &&
-                            ( payload.destination_port == 53 || payload.destination_port == 5353)
-                        {
-                            debug!("dropping payload as it's a DNS request");
-                        } else {
-                            let json = serde_json::to_string(&payload).unwrap();
-                            trace!("created json payload: {}", json);
-                            for output in &mut self.outputs {
-                                output.process(&json);
-                            }
+                    if ! self.filter.apply(&payload) {
+                        let json = serde_json::to_string(&payload).unwrap();
+                        trace!("created json payload: {}", json);
+                        for output in &mut self.outputs {
+                            output.process(&json);
                         }
                     }
                 } else {
@@ -164,7 +145,6 @@ impl NoTrack {
 
         Ok(())
     }
-
 
     pub fn dump_config(&self) -> Result<(), String> {
         dump_config(&self.config)
@@ -183,27 +163,39 @@ pub fn dump_config(config: &Config) -> Result<(), String> {
     Ok(())
 }
 
+
 #[cfg(test)]
 mod tests {
     use super::*;
+    use filters::FiltersConfig;
+    use outputs::OutputsConfig;
 
     fn config_string() -> String {
-        let string = String::from("---\noutputs:\n  syslog: []\ninclude_non_process_connections: false\ninclude_dns_request: false");
+        let string = String::from("---\noutputs:\n  syslog: []\nfilters:\n  non_process_connections: true\n  dns_requests : true\n  notrust_track_connections: true");
         return string;
     }
 
-    #[test]
-    fn test_dump_config_success() {
-        let config = Config {
+    fn default_filters() -> FiltersConfig {
+        FiltersConfig {
+            non_process_connections: true,
+            dns_requests : true,
+            notrust_track_connections: true,
+        }
+    }
+
+    fn default_config() -> Config {
+        Config {
             outputs : OutputsConfig {
                 syslog : Vec::new(),
                 elasticsearch : None,
             },
-            include_non_process_connections: false,
-            include_dns_request: false,
-        };
+            filters: default_filters(),
+        }
+    }
 
-
+    #[test]
+    fn test_dump_config_success() {
+        let config = default_config();
         assert!(!dump_config(&config).is_err());
     }
 
