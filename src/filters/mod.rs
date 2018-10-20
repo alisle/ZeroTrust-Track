@@ -14,6 +14,7 @@
  *
  */
 
+use std::collections::HashSet;
 use libc::{ getpid };
 use enums::{ State };
 use parser::{ Payload };
@@ -25,9 +26,10 @@ use parser::{ Payload };
      pub notrust_track_connections: bool,
  }
 
-#[derive(Copy, Clone)]
+#[derive(Clone)]
  pub struct Filter {
      config : FiltersConfig,
+     filtered : HashSet<i64>,
      pid: u32,
  }
 
@@ -37,15 +39,26 @@ impl Filter {
         Ok(Filter {
             config: config,
             pid : unsafe { getpid() } as u32,
+            filtered: HashSet::new(),
         })
     }
 
-    pub fn apply(&self, payload: &Payload) -> bool {
+    pub fn apply(&mut self, payload: &Payload) -> bool {
+        if payload.state == State::Destroy &&
+            self.filtered.contains(&payload.hash)
+        {
+            trace!("removing payload from filter hash set");
+            self.filtered.remove(&payload.hash);
+
+            return true;
+        }
+
         if  self.config.non_process_connections &&
             payload.program_details.is_none() &&
             payload.state == State::New
         {
             trace!("dropping payload as it doesn't include process information");
+            self.filtered.insert(payload.hash);
             return true;
         }
 
@@ -53,6 +66,7 @@ impl Filter {
             ( payload.destination_port == 53 || payload.destination_port == 5353)
         {
             trace!("dropping payload as it's a DNS request");
+            self.filtered.insert(payload.hash);
             return true;
         }
 
@@ -60,10 +74,12 @@ impl Filter {
             if let Some(ref details) = payload.program_details {
                 if details.pid == self.pid {
                     trace!("dropping payload is the pid is the same as ours");
+                    self.filtered.insert(payload.hash);
                     return true;
                 }
             }
         }
+
 
         trace!("allowing payload");
         false
@@ -75,11 +91,22 @@ mod tests {
     use super::*;
     use enums::{ Protocol, State };
     use std::net::Ipv4Addr;
-    use parser::{ Program };
+    use parser::{ Program, generate_hash };
+    use chrono::prelude::*;
+
+
 
     fn default_payload() -> Payload {
         Payload {
             state: State::New,
+            hash: generate_hash(
+                &Protocol::TCP.to_string(),
+                &Ipv4Addr::new(127, 0, 0, 1),
+                &22,
+                &Ipv4Addr::new(127, 0, 0, 1),
+                &22
+            ) as i64,
+            timestamp: Utc::now().to_rfc3339(),
             protocol: Protocol::TCP,
             source_port : 22,
             source: Ipv4Addr::new(127, 0, 0, 1),
@@ -101,8 +128,34 @@ mod tests {
 
 
     #[test]
+    fn test_filter_set_true() {
+        let  mut filter = Filter::new(FiltersConfig {
+            non_process_connections: true,
+           .. default_filters()
+        }).unwrap();
+
+        let payload = default_payload();
+        assert_eq!(true, filter.apply(&payload));
+
+        let payload = Payload {
+            state : State::Destroy,
+            .. default_payload()
+        };
+        assert_eq!(true, filter.apply(&payload));
+
+        let payload = Payload {
+            state : State::Destroy,
+            .. default_payload()
+        };
+        assert_eq!(false, filter.apply(&payload));
+    }
+
+
+
+
+    #[test]
     fn test_filter_include_non_process_connections_false() {
-        let filter = Filter::new(FiltersConfig {
+        let mut filter = Filter::new(FiltersConfig {
             non_process_connections: false,
            .. default_filters()
         }).unwrap();
@@ -113,7 +166,7 @@ mod tests {
 
     #[test]
     fn test_filter_include_non_process_connections_true() {
-        let filter = Filter::new(FiltersConfig {
+        let  mut filter = Filter::new(FiltersConfig {
             non_process_connections: true,
            .. default_filters()
         }).unwrap();
@@ -124,7 +177,7 @@ mod tests {
 
     #[test]
     fn test_filter_include_dns_request_false() {
-        let filter = Filter::new(FiltersConfig {
+        let  mut filter = Filter::new(FiltersConfig {
             non_process_connections: false,
             dns_requests : false,
            .. default_filters()
@@ -141,7 +194,7 @@ mod tests {
 
     #[test]
     fn test_filter_include_dns_request_true() {
-        let filter = Filter::new(FiltersConfig {
+        let mut filter = Filter::new(FiltersConfig {
             non_process_connections: false,
             dns_requests : true,
            .. default_filters()
@@ -159,7 +212,7 @@ mod tests {
 
     #[test]
     fn test_filter_notrust_track_connections_true() {
-        let filter = Filter::new(FiltersConfig {
+        let mut filter = Filter::new(FiltersConfig {
             notrust_track_connections : true,
            .. default_filters()
         }).unwrap();
@@ -179,7 +232,7 @@ mod tests {
 
     #[test]
     fn test_filter_notrust_track_connections_false() {
-        let filter = Filter::new(FiltersConfig {
+        let mut filter = Filter::new(FiltersConfig {
             notrust_track_connections : false,
            .. default_filters()
         }).unwrap();

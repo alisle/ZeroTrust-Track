@@ -2,17 +2,22 @@
 outputs:
   syslog:
     - Localhost
-  elasticsearch: "http://172.16.144.1:9200/track"
-# If this is set to true it will include all connections, including multicast
-include_non_process_connections: false
-
-# If this is set to true we show connections to and from 53 and 5353, normally this generates
-# alot of noise.
-include_dns_request: false
-
 #    - TCP:
 #        address: 127.0.0.1
-4r#        port: 601
+#        port: 601
 #    - UDP:
 #        address: 127.0.0.1
 #        port: 514
+  elasticsearch: "http://172.16.144.1:9200/track"
+
+filters:
+  # If this is set to true it will include all connections, including multicast
+  non_process_connections: true
+
+  # If this is set to true we show connections to and from 53 and 5353, normally this generates
+  # alot of noise.
+  dns_requests : true
+
+  # If this is enabled then we will report when notrust-track makes an outbound connection, if you're
+  # using an output which isn't local, this can create a loop of reporting.
+  notrust_track_connections: true

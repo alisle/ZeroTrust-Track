@@ -68,7 +68,7 @@ pub struct Conntrack<'a> {
 impl<'a> Conntrack<'a> {
     pub fn new() -> Result<Conntrack<'a>, io::Error> {
         let nl =  mnl::Socket::open(netlink::Family::NETFILTER)?;
-        nl.bind(conntrack::NF_NETLINK_CONNTRACK_NEW, mnl::SOCKET_AUTOPID)?;  //| conntrack::NF_NETLINK_CONNTRACK_DESTROY, mnl::SOCKET_AUTOPID)?;
+        nl.bind(conntrack::NF_NETLINK_CONNTRACK_NEW | conntrack::NF_NETLINK_CONNTRACK_DESTROY, mnl::SOCKET_AUTOPID)?;
 
         Ok(Conntrack {
             socket: nl,

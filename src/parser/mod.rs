@@ -19,17 +19,37 @@ use std::io;
 use std::thread;
 use std::time;
 use std::u32;
+use std::hash::{Hash, Hasher};
+use std::collections::hash_map::DefaultHasher;
 use users::{Users, UsersCache};
-
 use proc_chomper::{ProcChomper};
 use enums::{ Protocol, State };
 use proc::{Proc};
 use conn_track;
+use chrono::prelude::*;
+
+pub fn generate_hash(
+    protocol : &str,
+    source: &Ipv4Addr,
+    source_port: &u16,
+    destination: &Ipv4Addr,
+    destination_port: &u16
+) -> u64 {
+    let mut s = DefaultHasher::new();
+    protocol.hash(&mut s);
+    source.hash(&mut s);
+    source_port.hash(&mut s);
+    destination.hash(&mut s);
+    destination_port.hash(&mut s);
+    s.finish()
+}
 
 
 #[derive(Debug, Serialize)]
 pub struct Payload {
     pub state : State,
+    pub hash: i64,
+    pub timestamp : String,
     pub protocol : Protocol,
     pub source: Ipv4Addr,
     pub destination : Ipv4Addr,
@@ -133,8 +153,18 @@ impl Parser {
             }
         };
 
+        let timestamp = Utc::now().to_rfc3339();
+        let hash =  generate_hash(
+            &protocol.to_string(),
+            &source,
+            &source_port,
+            &destination,
+            &destination_port) as i64;
+
         Some(Payload {
             state,
+            hash,
+            timestamp,
             protocol,
             source,
             destination,

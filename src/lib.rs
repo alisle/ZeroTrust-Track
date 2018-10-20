@@ -26,6 +26,7 @@ extern crate syslog;
 extern crate sys_info;
 extern crate reqwest;
 extern crate simple_logger;
+extern crate chrono;
 
 #[macro_use]
 extern crate serde_derive;

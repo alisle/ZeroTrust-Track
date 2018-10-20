@@ -14,25 +14,35 @@
  *
  */
 
- use outputs::OutputsConfig;
- use filters::FiltersConfig;
+use std::fmt;
+use outputs::OutputsConfig;
+use filters::FiltersConfig;
 
 
- #[derive(Debug, Serialize, Deserialize)]
- pub struct Config {
-     pub outputs : OutputsConfig,
-     pub filters : FiltersConfig,
- }
+#[derive(Debug, Serialize, Deserialize)]
+pub struct Config {
+    pub outputs : OutputsConfig,
+    pub filters : FiltersConfig,
+}
 
- #[derive(Debug, Serialize)]
- pub enum Protocol {
-     UDP,
-     TCP,
- }
+#[derive(Debug, Serialize)]
+pub enum Protocol {
+    UDP,
+    TCP,
+}
 
- #[derive(Debug, Serialize, PartialEq)]
- pub enum State {
-     New,
-     Destroy,
-     Unknown,
- }
+impl fmt::Display for Protocol {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match *self {
+            Protocol::UDP => write!(f, "UDP"),
+            Protocol::TCP => write!(f, "TCP"),
+        }
+    }
+}
+
+#[derive(Debug, Serialize, PartialEq)]
+pub enum State {
+    New,
+    Destroy,
+    Unknown,
+}
