@@ -20,13 +20,11 @@ extern crate simple_logger;
 
 #[macro_use]
 extern crate log;
-
+use log::Level;
 use clap::{Arg, App};
 use notrust_track::{NoTrack};
 
 fn main() {
-    simple_logger::init().unwrap();
-
     let matches = App::new("NoTrust Tracker")
         .version("1.0")
         .author("Alex Lisle <alex.lisle@gmail.com>")
@@ -48,8 +46,8 @@ fn main() {
         0 => simple_logger::init_with_level(Level::Warn).unwrap(),
         1 => simple_logger::init_with_level(Level::Info).unwrap(),
         2 => simple_logger::init_with_level(Level::Debug).unwrap(),
-        3 | _ => simple_logger::init_with_level(Level::Trace).unwrap(),,
-    }
+        3 | _ => simple_logger::init_with_level(Level::Trace).unwrap(),
+    };
 
     let config = matches.value_of("config").unwrap_or("/etc/notrust/config.yaml");
     info!("loading config: {}", config);

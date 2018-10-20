@@ -43,7 +43,6 @@ use std::thread;
 use std::fs::File;
 use std::io::prelude::*;
 
-
 use parser::{ Parser };
 use conn_track::Conntrack;
 
