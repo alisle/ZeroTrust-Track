@@ -46,18 +46,28 @@ pub fn generate_hash(
 
 
 #[derive(Debug, Serialize)]
-pub struct Payload {
-    pub state : State,
-    pub hash: i64,
-    pub timestamp : String,
-    pub protocol : Protocol,
-    pub source: Ipv4Addr,
-    pub destination : Ipv4Addr,
-    pub source_port : u16,
-    pub destination_port : u16,
-    pub username : String,
-    pub uid : u16,
-    pub program_details : Option<Program>,
+pub enum Payload {
+    New {
+        hash: i64,
+        timestamp : String,
+        protocol : Protocol,
+        source: Ipv4Addr,
+        destination : Ipv4Addr,
+        source_port : u16,
+        destination_port : u16,
+        username : String,
+        uid : u16,
+        program_details : Option<Program>,
+    },
+    Close {
+        hash: i64,
+        timestamp : String,
+        protocol : Protocol,
+        source: Ipv4Addr,
+        destination : Ipv4Addr,
+        source_port : u16,
+        destination_port : u16,
+    },
 }
 
 #[derive(Debug, Serialize)]
@@ -161,19 +171,35 @@ impl Parser {
             &destination,
             &destination_port) as i64;
 
-        Some(Payload {
-            state,
-            hash,
-            timestamp,
-            protocol,
-            source,
-            destination,
-            source_port,
-            destination_port,
-            username,
-            uid,
-            program_details,
-        })
+        let payload = match state {
+            State::New => Some(
+                Payload::New {
+                    hash,
+                    timestamp,
+                    protocol,
+                    source,
+                    destination,
+                    source_port,
+                    destination_port,
+                    username,
+                    uid,
+                    program_details,
+                }),
+            State::Destroy => Some(
+                Payload::Close {
+                    hash,
+                    timestamp,
+                    protocol,
+                    source,
+                    destination,
+                    source_port,
+                    destination_port,
+                }),
+            _ => None,
+        };
+
+        payload
+
     }
 
 }

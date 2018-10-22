@@ -16,7 +16,6 @@
 
 use std::collections::HashSet;
 use libc::{ getpid };
-use enums::{ State };
 use parser::{ Payload };
 
  #[derive(Debug, Serialize, Deserialize, Copy, Clone)]
@@ -44,42 +43,45 @@ impl Filter {
     }
 
     pub fn apply(&mut self, payload: &Payload) -> bool {
-        if payload.state == State::Destroy &&
-            self.filtered.contains(&payload.hash)
-        {
-            trace!("removing payload from filter hash set");
-            self.filtered.remove(&payload.hash);
+        match payload {
+            Payload::New { hash, timestamp: _, protocol: _, source: _, destination: _, source_port: _, destination_port, username: _, uid: _, program_details } => {
+                if self.config.non_process_connections && program_details.is_none() {
+                    trace!("dropping payload as it doesn't include process information");
+                    self.filtered.insert(*hash);
+                    return true;
+                }
 
-            return true;
-        }
+                if self.config.notrust_track_connections {
+                    if let Some(ref details) = program_details {
+                        if details.pid == self.pid {
+                            trace!("dropping payload is the pid is the same as ours");
+                            self.filtered.insert(*hash);
+                            return true;
+                        }
+                    }
+                }
 
-        if  self.config.non_process_connections &&
-            payload.program_details.is_none() &&
-            payload.state == State::New
-        {
-            trace!("dropping payload as it doesn't include process information");
-            self.filtered.insert(payload.hash);
-            return true;
-        }
+                if self.config.dns_requests &&
+                    ( *destination_port == 53 || *destination_port == 5353)
+                {
+                    trace!("dropping payload as it's a DNS request");
+                    self.filtered.insert(*hash);
+                    return true;
+                }
 
-        if self.config.dns_requests &&
-            ( payload.destination_port == 53 || payload.destination_port == 5353)
-        {
-            trace!("dropping payload as it's a DNS request");
-            self.filtered.insert(payload.hash);
-            return true;
-        }
 
-        if self.config.notrust_track_connections {
-            if let Some(ref details) = payload.program_details {
-                if details.pid == self.pid {
-                    trace!("dropping payload is the pid is the same as ours");
-                    self.filtered.insert(payload.hash);
+            },
+            Payload::Close { hash, timestamp: _, protocol: _, source: _, destination: _, source_port: _, destination_port: _ } => {
+                if self.filtered.contains(&hash)
+                {
+                    trace!("removing payload from filter hash set");
+                    self.filtered.remove(&hash);
+
                     return true;
                 }
             }
-        }
 
+        }
 
         trace!("allowing payload");
         false
@@ -89,16 +91,14 @@ impl Filter {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use enums::{ Protocol, State };
+    use enums::{ Protocol };
     use std::net::Ipv4Addr;
     use parser::{ Program, generate_hash };
     use chrono::prelude::*;
 
 
-
-    fn default_payload() -> Payload {
-        Payload {
-            state: State::New,
+    fn default_close_payload() -> Payload {
+        Payload::Close {
             hash: generate_hash(
                 &Protocol::TCP.to_string(),
                 &Ipv4Addr::new(127, 0, 0, 1),
@@ -112,9 +112,31 @@ mod tests {
             source: Ipv4Addr::new(127, 0, 0, 1),
             destination_port : 22,
             destination : Ipv4Addr::new(127, 0, 0, 1),
+        }
+    }
+
+    fn default_new_payload(
+        source_port : u16,
+        destination_port : u16,
+        program_details: Option<Program>
+    ) -> Payload {
+        Payload::New {
+            hash: generate_hash(
+                &Protocol::TCP.to_string(),
+                &Ipv4Addr::new(127, 0, 0, 1),
+                &22,
+                &Ipv4Addr::new(127, 0, 0, 1),
+                &22
+            ) as i64,
+            timestamp: Utc::now().to_rfc3339(),
+            protocol: Protocol::TCP,
+            source_port : source_port,
+            source: Ipv4Addr::new(127, 0, 0, 1),
+            destination_port : destination_port,
+            destination : Ipv4Addr::new(127, 0, 0, 1),
             username : String::from("hello"),
             uid: 10,
-            program_details : None,
+            program_details : program_details,
         }
     }
 
@@ -134,19 +156,14 @@ mod tests {
            .. default_filters()
         }).unwrap();
 
-        let payload = default_payload();
+        let payload = default_new_payload(0, 0, None);
         assert_eq!(true, filter.apply(&payload));
 
-        let payload = Payload {
-            state : State::Destroy,
-            .. default_payload()
-        };
+        let payload = default_close_payload();
+
         assert_eq!(true, filter.apply(&payload));
 
-        let payload = Payload {
-            state : State::Destroy,
-            .. default_payload()
-        };
+        let payload = default_close_payload();
         assert_eq!(false, filter.apply(&payload));
     }
 
@@ -160,7 +177,7 @@ mod tests {
            .. default_filters()
         }).unwrap();
 
-        let payload = default_payload();
+        let payload = default_new_payload(0, 0, None);
         assert_eq!(false, filter.apply(&payload));
     }
 
@@ -171,7 +188,7 @@ mod tests {
            .. default_filters()
         }).unwrap();
 
-        let payload = default_payload();
+        let payload = default_new_payload(0, 0, None);
         assert_eq!(true, filter.apply(&payload));
     }
 
@@ -183,12 +200,7 @@ mod tests {
            .. default_filters()
         }).unwrap();
 
-        let payload = Payload {
-            source_port: 53,
-            destination_port: 53,
-            .. default_payload()
-        };
-
+        let payload = default_new_payload(53, 53, None);
         assert_eq!(false, filter.apply(&payload));
     }
 
@@ -200,12 +212,7 @@ mod tests {
            .. default_filters()
         }).unwrap();
 
-        let payload = Payload {
-            source_port: 53,
-            destination_port: 53,
-            .. default_payload()
-        };
-
+        let payload = default_new_payload(53, 53, None);
         assert_eq!(true, filter.apply(&payload));
     }
 
@@ -217,15 +224,12 @@ mod tests {
            .. default_filters()
         }).unwrap();
 
-        let payload = Payload {
-            program_details : Some(Program {
+        let payload = default_new_payload(0, 0, Some(Program {
                     inode: 0,
                     pid: unsafe { getpid() } as u32,
                     process_name : String::from("I am a program"),
                     command_line : Vec::new()
-            }),
-            .. default_payload()
-        };
+            }));
 
         assert_eq!(true, filter.apply(&payload));
     }
@@ -237,15 +241,12 @@ mod tests {
            .. default_filters()
         }).unwrap();
 
-        let payload = Payload {
-            program_details : Some(Program {
+        let payload = default_new_payload(0, 0, Some(Program {
                     inode: 0,
-                    pid: 100,
+                    pid: unsafe { getpid() } as u32,
                     process_name : String::from("I am a program"),
                     command_line : Vec::new()
-            }),
-            .. default_payload()
-        };
+            }));
 
         assert_eq!(false, filter.apply(&payload));
     }
