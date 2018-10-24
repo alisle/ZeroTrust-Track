@@ -8,7 +8,7 @@ outputs:
 #    - UDP:
 #        address: 127.0.0.1
 #        port: 514
-  elasticsearch: "http://172.16.144.1:9200/track"
+#  elasticsearch: "http://<ES Server>:9200/<Index>"
 
 filters:
   # If this is set to true it will include all connections, including multicast

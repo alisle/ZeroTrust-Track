@@ -27,6 +27,7 @@ extern crate sys_info;
 extern crate reqwest;
 extern crate simple_logger;
 extern crate chrono;
+extern crate uuid;
 
 #[macro_use]
 extern crate serde_derive;
@@ -43,16 +44,17 @@ use std::thread;
 use std::fs::File;
 use std::io::prelude::*;
 
-use parser::{ Parser };
+use parser::{ Parser, Payload };
 use conn_track::Conntrack;
 
 use enums::{ Config };
 use filters::{ Filter };
-
+use state::{ State };
 mod conn_track;
 mod proc_chomper;
 mod parser;
 mod proc;
+mod state;
 
 pub mod outputs;
 pub mod enums;
@@ -116,6 +118,12 @@ impl NoTrack {
 
         let (mut tx, rx) : (Sender<conn_track::Connection>, Receiver<conn_track::Connection>) = channel();
 
+        let mut state = match State::new() {
+            Ok(x) => x,
+            Err(_err) => return Err(String::from("unable to start the state module")),
+        };
+
+
         thread::spawn(move || {
             info!("starting conntrack");
             tracker.start(&mut tx);
@@ -128,10 +136,19 @@ impl NoTrack {
                 trace!("recieved {:?} from channel, parsing", con);
                 if let Some(payload) = parser.parse(con) {
                     if ! self.filter.apply(&payload) {
-                        let json = serde_json::to_string(&payload).unwrap();
+                        state.transform(&payload);
+
+                        let json = match payload {
+                            Payload::Open(ref connection)  => serde_json::to_string(connection).unwrap(),
+                            Payload::Close(ref connection) => serde_json::to_string(connection).unwrap(),
+                        };
+
                         trace!("created json payload: {}", json);
                         for output in &mut self.outputs {
-                            output.process(&json);
+                            match payload {
+                                Payload::Open(_) => output.process_open_connection(&json),
+                                Payload::Close(_) => output.process_close_connection(&json),
+                             }
                         }
                     }
                 } else {

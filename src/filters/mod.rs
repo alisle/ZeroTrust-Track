@@ -44,38 +44,37 @@ impl Filter {
 
     pub fn apply(&mut self, payload: &Payload) -> bool {
         match payload {
-            Payload::New { hash, timestamp: _, protocol: _, source: _, destination: _, source_port: _, destination_port, username: _, uid: _, program_details } => {
-                if self.config.non_process_connections && program_details.is_none() {
+            Payload::Open(connection) => {
+                if self.config.non_process_connections && connection.program_details.is_none() {
                     trace!("dropping payload as it doesn't include process information");
-                    self.filtered.insert(*hash);
+                    self.filtered.insert(connection.hash);
                     return true;
                 }
 
                 if self.config.notrust_track_connections {
-                    if let Some(ref details) = program_details {
+                    if let Some(ref details) = connection.program_details {
                         if details.pid == self.pid {
                             trace!("dropping payload is the pid is the same as ours");
-                            self.filtered.insert(*hash);
+                            self.filtered.insert(connection.hash);
                             return true;
                         }
                     }
                 }
 
                 if self.config.dns_requests &&
-                    ( *destination_port == 53 || *destination_port == 5353)
+                    ( connection.destination_port == 53 || connection.destination_port == 5353)
                 {
                     trace!("dropping payload as it's a DNS request");
-                    self.filtered.insert(*hash);
+                    self.filtered.insert(connection.hash);
                     return true;
                 }
 
-
             },
-            Payload::Close { hash, timestamp: _, protocol: _, source: _, destination: _, source_port: _, destination_port: _ } => {
-                if self.filtered.contains(&hash)
+            Payload::Close(connection) => {
+                if self.filtered.contains(&connection.hash)
                 {
                     trace!("removing payload from filter hash set");
-                    self.filtered.remove(&hash);
+                    self.filtered.remove(&connection.hash);
 
                     return true;
                 }
@@ -95,6 +94,7 @@ mod tests {
     use std::net::Ipv4Addr;
     use parser::{ Program, generate_hash };
     use chrono::prelude::*;
+    use uuid::Uuid;
 
 
     fn default_close_payload() -> Payload {
@@ -128,6 +128,7 @@ mod tests {
                 &Ipv4Addr::new(127, 0, 0, 1),
                 &22
             ) as i64,
+            uuid: Uuid::new_v4(),
             timestamp: Utc::now().to_rfc3339(),
             protocol: Protocol::TCP,
             source_port : source_port,

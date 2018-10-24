@@ -28,7 +28,8 @@ pub struct OutputsConfig {
 }
 
 pub trait Output {
-    fn process(&mut self, &str);
+    fn process_open_connection(&mut self, &str);
+    fn process_close_connection(&mut self, &str);
 }
 
 
@@ -66,7 +67,7 @@ pub fn create(config : &OutputsConfig) -> Result<Vec<Box<Output>>, String> {
 #[cfg(test)]
 mod tests {
     use std::net::{ Ipv4Addr, TcpListener, UdpSocket };
-    
+
     #[test]
     fn test_create_failed() {
         let mut vec = Vec::new();

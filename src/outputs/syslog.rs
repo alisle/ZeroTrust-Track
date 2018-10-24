@@ -134,9 +134,14 @@ impl Syslog {
 }
 
 impl Output for Syslog {
-    fn process(&mut self, message : &str) {
+    fn process_open_connection(&mut self, message: &str) {
         let _ = self.tx.send(message.to_string());
     }
+
+    fn process_close_connection(&mut self, message: &str) {
+        let _ = self.tx.send(message.to_string());
+    }
+
 }
 
 fn create_formatter() -> Formatter3164 {
