@@ -1,7 +1,7 @@
 ---
 outputs:
-  syslog:
-    - Localhost
+#  syslog:
+#    - Localhost
 #    - TCP:
 #        address: 127.0.0.1
 #        port: 601
@@ -9,6 +9,7 @@ outputs:
 #        address: 127.0.0.1
 #        port: 514
 #  elasticsearch: "http://<ES Server>:9200/<Index>"
+   notrust_endpoint: "http://172.16.144.1:8080"
 
 filters:
   # If this is set to true it will include all connections, including multicast

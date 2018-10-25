@@ -15,16 +15,19 @@
  */
 
 use outputs::syslog::{SyslogConfig, Syslog};
-use outputs::elasticsearch:: { Elasticsearch };
+use outputs::elasticsearch::{ Elasticsearch };
+use outputs::server::{ Server };
 
 mod syslog;
 mod elasticsearch;
+mod server;
 
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct OutputsConfig {
-    pub syslog : Vec<SyslogConfig>,
+    pub syslog : Option<Vec<SyslogConfig>>,
     pub elasticsearch : Option<String>,
+    pub notrust_endpoint : Option<String>,
 }
 
 pub trait Output {
@@ -35,30 +38,38 @@ pub trait Output {
 
 pub fn create(config : &OutputsConfig) -> Result<Vec<Box<Output>>, String> {
         let mut outputs : Vec<Box<Output>> = Vec::new();
-        for output in config.syslog.iter() {
-        match output {
-                SyslogConfig::Localhost => {
-                    info!("adding localhost syslog output");
-                    let syslog = Syslog::local()?;
-                    outputs.push(Box::new(syslog));
-                },
-                SyslogConfig::TCP{address, port} => {
-                    info!("adding tcp syslog output");
-                    let syslog = Syslog::tcp(address, *port)?;
-                    outputs.push(Box::new(syslog));
-                },
-                SyslogConfig::UDP{address, port} => {
-                    info!("adding udp syslog output");
-                    let syslog = Syslog::udp(address, *port)?;
-                    outputs.push(Box::new(syslog));
-                },
-            };
+        if let Some(ref config) = config.syslog {
+            for output in config.iter() {
+            match output {
+                    SyslogConfig::Localhost => {
+                        info!("adding localhost syslog output");
+                        let syslog = Syslog::local()?;
+                        outputs.push(Box::new(syslog));
+                    },
+                    SyslogConfig::TCP{address, port} => {
+                        info!("adding tcp syslog output");
+                        let syslog = Syslog::tcp(address, *port)?;
+                        outputs.push(Box::new(syslog));
+                    },
+                    SyslogConfig::UDP{address, port} => {
+                        info!("adding udp syslog output");
+                        let syslog = Syslog::udp(address, *port)?;
+                        outputs.push(Box::new(syslog));
+                    },
+                };
+            }
         }
 
         if let Some(ref config) = config.elasticsearch {
             info!("adding elasticsearch output: {}", config);
             let elasticsearch = Elasticsearch::new(config)?;
             outputs.push(Box::new(elasticsearch));
+        }
+
+        if let Some(ref config) = config.notrust_endpoint {
+            info!("adding server output: {}", config);
+            let server = Server::new(config)?;
+            outputs.push(Box::new(server));
         }
 
         Ok(outputs)
