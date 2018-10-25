@@ -135,11 +135,11 @@ impl Syslog {
 
 impl Output for Syslog {
     fn process_open_connection(&mut self, message: &str) {
-        let _ = self.tx.send(message.to_string());
+        let _ = self.tx.send(format!("CONNECTION OPENED: {}", message.to_string()));
     }
 
     fn process_close_connection(&mut self, message: &str) {
-        let _ = self.tx.send(message.to_string());
+        let _ = self.tx.send(format!("CONNECTION CLOSED: {}", message.to_string()));
     }
 
 }
@@ -166,7 +166,8 @@ mod tests {
     #[test]
     fn test_create_syslog_unix() {
         if let Ok(mut writer) = Syslog::local() {
-            writer.process("Hello people");
+            writer.process_open_connection("Hello people");
+            writer.process_close_connection("Hello people");
         } else {
             assert!(false, "unable to create syslog client");
         }
@@ -177,7 +178,8 @@ mod tests {
     fn test_create_syslog_tcp() {
         let _listener = TcpListener::bind("127.0.0.1:3514").unwrap();
         if let Ok(mut writer) = Syslog::tcp(&Ipv4Addr::new(127, 0, 0, 1), 3514) {
-            writer.process("Hello people");
+            writer.process_open_connection("Hello people");
+            writer.process_close_connection("Hello people");
         } else {
             assert!(false, "unable to create the syslog client");
         }
@@ -188,7 +190,8 @@ mod tests {
     fn test_create_syslog_udp() {
         let _listener = UdpSocket::bind("127.0.0.1:5514").unwrap();
         if let Ok(mut writer) = Syslog::udp(&Ipv4Addr::new(127, 0, 0, 1), 5514) {
-            writer.process("Hello people");
+            writer.process_open_connection("Hello people");
+            writer.process_close_connection("Hello people");
         } else {
             assert!(false, "unable to create the syslog client");
         }

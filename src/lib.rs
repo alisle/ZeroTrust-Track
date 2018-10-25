@@ -136,8 +136,7 @@ impl NoTrack {
                 trace!("recieved {:?} from channel, parsing", con);
                 if let Some(payload) = parser.parse(con) {
                     if ! self.filter.apply(&payload) {
-                        state.transform(&payload);
-
+                        let payload = state.transform(payload);
                         let json = match payload {
                             Payload::Open(ref connection)  => serde_json::to_string(connection).unwrap(),
                             Payload::Close(ref connection) => serde_json::to_string(connection).unwrap(),

@@ -90,6 +90,7 @@ impl Filter {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use parser::{ Payload, OpenConnection, CloseConnection };
     use enums::{ Protocol };
     use std::net::Ipv4Addr;
     use parser::{ Program, generate_hash };
@@ -98,7 +99,7 @@ mod tests {
 
 
     fn default_close_payload() -> Payload {
-        Payload::Close {
+        Payload::Close(CloseConnection {
             hash: generate_hash(
                 &Protocol::TCP.to_string(),
                 &Ipv4Addr::new(127, 0, 0, 1),
@@ -106,21 +107,22 @@ mod tests {
                 &Ipv4Addr::new(127, 0, 0, 1),
                 &22
             ) as i64,
+            uuid: None,
             timestamp: Utc::now().to_rfc3339(),
             protocol: Protocol::TCP,
             source_port : 22,
             source: Ipv4Addr::new(127, 0, 0, 1),
             destination_port : 22,
             destination : Ipv4Addr::new(127, 0, 0, 1),
-        }
+        })
     }
 
-    fn default_new_payload(
+    fn default_open_payload(
         source_port : u16,
         destination_port : u16,
         program_details: Option<Program>
     ) -> Payload {
-        Payload::New {
+        Payload::Open(OpenConnection {
             hash: generate_hash(
                 &Protocol::TCP.to_string(),
                 &Ipv4Addr::new(127, 0, 0, 1),
@@ -138,7 +140,7 @@ mod tests {
             username : String::from("hello"),
             uid: 10,
             program_details : program_details,
-        }
+        })
     }
 
     fn default_filters() -> FiltersConfig {
@@ -157,7 +159,7 @@ mod tests {
            .. default_filters()
         }).unwrap();
 
-        let payload = default_new_payload(0, 0, None);
+        let payload = default_open_payload(0, 0, None);
         assert_eq!(true, filter.apply(&payload));
 
         let payload = default_close_payload();
@@ -178,7 +180,7 @@ mod tests {
            .. default_filters()
         }).unwrap();
 
-        let payload = default_new_payload(0, 0, None);
+        let payload = default_open_payload(0, 0, None);
         assert_eq!(false, filter.apply(&payload));
     }
 
@@ -189,7 +191,7 @@ mod tests {
            .. default_filters()
         }).unwrap();
 
-        let payload = default_new_payload(0, 0, None);
+        let payload = default_open_payload(0, 0, None);
         assert_eq!(true, filter.apply(&payload));
     }
 
@@ -201,7 +203,7 @@ mod tests {
            .. default_filters()
         }).unwrap();
 
-        let payload = default_new_payload(53, 53, None);
+        let payload = default_open_payload(53, 53, None);
         assert_eq!(false, filter.apply(&payload));
     }
 
@@ -213,7 +215,7 @@ mod tests {
            .. default_filters()
         }).unwrap();
 
-        let payload = default_new_payload(53, 53, None);
+        let payload = default_open_payload(53, 53, None);
         assert_eq!(true, filter.apply(&payload));
     }
 
@@ -225,7 +227,7 @@ mod tests {
            .. default_filters()
         }).unwrap();
 
-        let payload = default_new_payload(0, 0, Some(Program {
+        let payload = default_open_payload(0, 0, Some(Program {
                     inode: 0,
                     pid: unsafe { getpid() } as u32,
                     process_name : String::from("I am a program"),
@@ -242,7 +244,7 @@ mod tests {
            .. default_filters()
         }).unwrap();
 
-        let payload = default_new_payload(0, 0, Some(Program {
+        let payload = default_open_payload(0, 0, Some(Program {
                     inode: 0,
                     pid: unsafe { getpid() } as u32,
                     process_name : String::from("I am a program"),
