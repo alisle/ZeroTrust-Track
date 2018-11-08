@@ -17,10 +17,14 @@
 use std::fmt;
 use outputs::OutputsConfig;
 use filters::FiltersConfig;
+use uuid::Uuid;
 
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Config {
+    pub directory : Option<String>,
+    pub name: Option<String>,
+    pub uuid: Option<Uuid>,
     pub outputs : OutputsConfig,
     pub filters : FiltersConfig,
 }

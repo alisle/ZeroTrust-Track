@@ -40,6 +40,13 @@ fn main() {
             .short("v")
             .multiple(true)
             .help("Sets the level of verbosity")
+        ).arg(Arg::with_name("data_directory")
+            .short("d")
+            .long("data-directory")
+            .value_name("DIRECTORY")
+            .help("Defines the data dirctory")
+            .takes_value(true)
+            .required(false)
         ).get_matches();
 
     match matches.occurrences_of("v") {
@@ -50,6 +57,8 @@ fn main() {
     };
 
     let config = matches.value_of("config").unwrap_or("/etc/notrust/config.yaml");
+    let data_directory = matches.value_of("data_directory");
+    
     info!("loading config: {}", config);
 
     let mut app = match NoTrack::from_file(&config) {

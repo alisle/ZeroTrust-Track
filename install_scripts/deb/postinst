@@ -40,6 +40,10 @@ case "$1" in
     else
       systemctl daemon-reload
     fi
+
+    if [ ! -d "/usr/share/notrust" ]; then
+      chown -R notrust:notrust /usr/share/notrust
+    fi
   ;;
 
   abort-upgrade|abort-remove|abort-deconfigure)

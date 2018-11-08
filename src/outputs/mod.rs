@@ -94,8 +94,9 @@ mod tests {
         });
 
         let config = super::OutputsConfig {
-            syslog: vec,
+            syslog: Some(vec),
             elasticsearch: None,
+            notrust_endpoint: None,
         };
 
         let config = super::create(&config);
@@ -118,8 +119,9 @@ mod tests {
             port: 7232
         });
         let config = super::OutputsConfig {
-            syslog: vec,
+            syslog: Some(vec),
             elasticsearch: None,
+            notrust_endpoint: None,
         };
 
         let config = super::create(&config);

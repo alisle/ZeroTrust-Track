@@ -1,4 +1,12 @@
 ---
+# Give a name to this machine, if none is set a random one is given.
+# name:
+
+# Give a UUID for this machine, if none is set a random UUID is given.  
+# uuid:
+
+# Data directory
+directory: /usr/share/notrust
 outputs:
 #  syslog:
 #    - Localhost

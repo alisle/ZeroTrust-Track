@@ -68,7 +68,7 @@ pub struct NoTrack {
 }
 
 impl NoTrack {
-    pub fn from_str(config: &str) -> Result<NoTrack, String> {
+    pub fn from_str(config: &str, data_directory: Option<String>) -> Result<NoTrack, String> {
         let config : Config = match serde_yaml::from_str(config) {
             Ok(x) => x,
             Err(err) => {
@@ -77,10 +77,10 @@ impl NoTrack {
             }
         };
 
-        NoTrack::new(config)
+        NoTrack::new(config, data_directory)
     }
 
-    pub fn from_file(name: &str) -> Result<NoTrack, String> {
+    pub fn from_file(name: &str, data_directory : Option<String>) -> Result<NoTrack, String> {
         let mut file = match File::open(name) {
             Ok(x) => x,
             Err(_err) => return Err(String::from("unable to open config file")),
@@ -91,10 +91,10 @@ impl NoTrack {
             return Err(String::from("unable to read config file"));
         }
 
-        NoTrack::from_str(&contents)
+        NoTrack::from_str(&contents, data_directory)
     }
 
-    pub fn new(config: Config) -> Result<NoTrack, String> {
+    pub fn new(config: Config, data_directory : Option<String>) -> Result<NoTrack, String> {
         let outputs = outputs::create(&config.outputs)?;
         let filter = Filter::new(config.filters)?;
 
@@ -201,8 +201,12 @@ mod tests {
 
     fn default_config() -> Config {
         Config {
+            directory: None,
+            name: None,
+            uuid: None,
             outputs : OutputsConfig {
-                syslog : Vec::new(),
+                notrust_endpoint: None,
+                syslog : Some(Vec::new()),
                 elasticsearch : None,
             },
             filters: default_filters(),
@@ -217,20 +221,20 @@ mod tests {
 
     #[test]
     fn test_from_str_fail() {
-        assert!(NoTrack::from_str("").is_err());
+        assert!(NoTrack::from_str("", None).is_err());
     }
 
     #[test]
     fn test_from_str_success() {
         let string = config_string();
-        assert!(!NoTrack::from_str(&string).is_err());
+        assert!(!NoTrack::from_str(&string, None).is_err());
     }
 
     #[test]
     fn test_from_file_fail() {
         let temp_file = tempfile::NamedTempFile::new().unwrap();
         let file = temp_file.path().to_str().unwrap();
-        assert!(NoTrack::from_file(file).is_err());
+        assert!(NoTrack::from_file(file, None).is_err());
     }
 
     #[test]
@@ -239,7 +243,7 @@ mod tests {
         let path = temp_file.path().to_str().unwrap();
 
         write!(&temp_file, "{}", config_string()).unwrap();
-        assert!(!NoTrack::from_file(path).is_err());
+        assert!(!NoTrack::from_file(path, None).is_err());
     }
 
 }

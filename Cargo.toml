@@ -45,4 +45,6 @@ assets = [
   [ "target/release/notrust-track", "/usr/sbin/notrust-track", "0550" ],
   [ "install_scripts/default_config/config.yaml", "/etc/notrust/config.yaml", "0644"],
   [ "install_scripts/systemd/notrust-track.service", "/usr/share/notrust/systemd/notrust-track.service", "0644"],
+  [ "LICENSE", "/usr/share/notrust/LICENSE", "0644"],
+  [ "README.md", "/usr/share/notrust/README.md", "0644"]
 ]
