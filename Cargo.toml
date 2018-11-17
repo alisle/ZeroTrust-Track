@@ -25,6 +25,7 @@ serde_yaml = "^0.8"
 reqwest = "^0.9"
 tempfile = "^3"
 chrono = { version = "0.4", features = ["serde"] }
+rand = "^0.5"
 
 [package.metadata.deb]
 maintainer = "Alex Lisle <alex.lisle@gmail.com>"
@@ -43,8 +44,9 @@ NoTrack-Track can be configured to report through UDP, TCP or local Syslog curre
 maintainer-scripts = "install_scripts/deb"
 assets = [
   [ "target/release/notrust-track", "/usr/sbin/notrust-track", "0550" ],
-  [ "install_scripts/default_config/config.yaml", "/etc/notrust/config.yaml", "0644"],
-  [ "install_scripts/systemd/notrust-track.service", "/usr/share/notrust/systemd/notrust-track.service", "0644"],
+  [ "resources/default_config/config.yaml", "/etc/notrust/config.yaml", "0644"],
+  [ "resources/systemd/notrust-track.service", "/usr/share/notrust/systemd/notrust-track.service", "0644"],
   [ "LICENSE", "/usr/share/notrust/LICENSE", "0644"],
-  [ "README.md", "/usr/share/notrust/README.md", "0644"]
+  [ "README.md", "/usr/share/notrust/README.md", "0644"],
+  [ "resources/names.txt", "/usr/share/notrust/names.txt", "0644"],
 ]

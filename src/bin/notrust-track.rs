@@ -58,10 +58,10 @@ fn main() {
 
     let config = matches.value_of("config").unwrap_or("/etc/notrust/config.yaml");
     let data_directory = matches.value_of("data_directory");
-    
+
     info!("loading config: {}", config);
 
-    let mut app = match NoTrack::from_file(&config) {
+    let mut app = match NoTrack::from_file(&config, data_directory) {
         Ok(app) => app,
         Err(err) => {
             error!("{}", err);
