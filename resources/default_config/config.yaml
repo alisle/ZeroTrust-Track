@@ -2,7 +2,7 @@
 # Give a name to this machine, if none is set a random one is given.
 # name:
 
-# Give a UUID for this machine, if none is set a random UUID is given.  
+# Give a UUID for this machine, if none is set a random UUID is given.
 # uuid:
 
 # Data directory
@@ -17,7 +17,7 @@ outputs:
 #        address: 127.0.0.1
 #        port: 514
 #  elasticsearch: "http://<ES Server>:9200/<Index>"
-   notrust_endpoint: "http://172.16.144.1:8080"
+   notrust_endpoint: "http://192.168.0.15:8080"
 
 filters:
   # If this is set to true it will include all connections, including multicast

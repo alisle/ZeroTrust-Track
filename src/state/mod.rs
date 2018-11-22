@@ -68,6 +68,7 @@ mod tests {
                 &22
             ) as i64,
             uuid: None,
+            agent: Uuid::new_v4(),            
             timestamp: Utc::now().to_rfc3339(),
             protocol: Protocol::TCP,
             source_port : 22,
@@ -91,6 +92,7 @@ mod tests {
                 &22
             ) as i64,
             uuid: Uuid::new_v4(),
+            agent: Uuid::new_v4(),
             timestamp: Utc::now().to_rfc3339(),
             protocol: Protocol::TCP,
             source_port : source_port,
@@ -114,7 +116,7 @@ mod tests {
         }
 
         let close_payload = state.transform(close_payload);
-        
+
         if let Payload::Close(ref close_connection) = close_payload {
             assert_eq!(true, close_connection.uuid.is_none());
         } else {

@@ -57,6 +57,7 @@ pub enum Payload {
 pub struct OpenConnection {
     pub hash: i64,
     pub uuid : Uuid,
+    pub agent: Uuid,
     pub timestamp : String,
     pub protocol : Protocol,
     pub source: Ipv4Addr,
@@ -71,6 +72,7 @@ pub struct OpenConnection {
 #[derive(Debug, Serialize)]
 pub struct CloseConnection {
     pub hash: i64,
+    pub agent: Uuid,
     pub uuid: Option<Uuid>,
     pub timestamp : String,
     pub protocol : Protocol,
@@ -93,10 +95,11 @@ pub struct Parser {
     tcp_chomper : ProcChomper,
     udp_chomper : ProcChomper,
     proc: Proc,
+    agent : Uuid,
 }
 
 impl Parser {
-    pub fn new() -> Result<Parser, io::Error> {
+    pub fn new(agent : Uuid) -> Result<Parser, io::Error> {
         let tcp_chomper = ProcChomper::new(Protocol::TCP)?;
         let udp_chomper = ProcChomper::new(Protocol::UDP)?;
         let user_cache = UsersCache::new();
@@ -107,6 +110,7 @@ impl Parser {
             tcp_chomper,
             udp_chomper,
             proc,
+            agent,
         })
     }
 
@@ -184,11 +188,13 @@ impl Parser {
             &destination_port) as i64;
 
         let uuid = Uuid::new_v4();
+        let agent = self.agent.clone();
         let payload = match state {
             State::New => Some(
                 Payload::Open(OpenConnection {
                     hash,
                     uuid,
+                    agent,
                     timestamp,
                     protocol,
                     source,
@@ -203,6 +209,7 @@ impl Parser {
                 Payload::Close(CloseConnection {
                     hash,
                     uuid: None,
+                    agent,
                     timestamp,
                     protocol,
                     source,

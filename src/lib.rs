@@ -136,12 +136,14 @@ impl NoTrack {
     }
 
     pub fn run(&mut self) -> Result<(), String> {
+        let agent = self.config.uuid.unwrap_or(Uuid::new_v4());
+
         let mut tracker=  match Conntrack::new() {
             Ok(x) => x,
             Err(_err) => return Err(String::from("unable to bind to conntrack, please check permissions")),
         };
 
-        let mut parser = match Parser::new() {
+        let mut parser = match Parser::new(agent) {
             Ok(x) => x,
             Err(_err) => return Err(String::from("unable to parse process descriptors, please check permissions")),
         };
