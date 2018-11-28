@@ -17,6 +17,7 @@
 use outputs::syslog::{SyslogConfig, Syslog};
 use outputs::elasticsearch::{ Elasticsearch };
 use outputs::server::{ Server };
+use enums::Config;
 
 mod syslog;
 mod elasticsearch;
@@ -36,9 +37,9 @@ pub trait Output {
 }
 
 
-pub fn create(config : &OutputsConfig) -> Result<Vec<Box<Output>>, String> {
+pub fn create(config : &Config) -> Result<Vec<Box<Output>>, String> {
         let mut outputs : Vec<Box<Output>> = Vec::new();
-        if let Some(ref config) = config.syslog {
+        if let Some(ref config) = config.outputs.syslog {
             for output in config.iter() {
             match output {
                     SyslogConfig::Localhost => {
@@ -60,15 +61,15 @@ pub fn create(config : &OutputsConfig) -> Result<Vec<Box<Output>>, String> {
             }
         }
 
-        if let Some(ref config) = config.elasticsearch {
+        if let Some(ref config) = config.outputs.elasticsearch {
             info!("adding elasticsearch output: {}", config);
             let elasticsearch = Elasticsearch::new(config)?;
             outputs.push(Box::new(elasticsearch));
         }
 
-        if let Some(ref config) = config.notrust_endpoint {
-            info!("adding server output: {}", config);
-            let server = Server::new(config)?;
+        if let Some(ref endpoint_config) = config.outputs.notrust_endpoint {
+            info!("adding server output: {} / {:?} / {:?}", endpoint_config, config.name, config.uuid);
+            let server = Server::new(&config.name, &config.uuid, endpoint_config)?;
             outputs.push(Box::new(server));
         }
 

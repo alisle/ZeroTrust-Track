@@ -124,9 +124,9 @@ impl NoTrack {
     }
 
     pub fn new(config: Config) -> Result<NoTrack, String> {
-        let outputs = outputs::create(&config.outputs)?;
-        let filter = Filter::new(config.filters)?;
         let config = populate_config(config);
+        let outputs = outputs::create(&config)?;
+        let filter = Filter::new(config.filters)?;
 
         Ok(NoTrack {
             config : config,
@@ -300,7 +300,7 @@ fn populate_config(config: Config) -> Config {
         },
     };
 
-    if let Err(err) = save_uuid_name_tuple(&names_file_name, &NameTuple { name: Some(name.clone()), uuid: Some(uuid.clone())}) {
+    if let Err(err) = save_uuid_name_tuple(&tuple_file_name, &NameTuple { name: Some(name.clone()), uuid: Some(uuid.clone())}) {
         warn!("unable to save file tuple {}", err);
     }
 
