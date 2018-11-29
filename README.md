@@ -1,5 +1,5 @@
 # NoTrust-Track
-Linux Agent  which tracks and logs all incoming and outgoing TCP and UDP connections along with the name of the process and who owns the process. NoTrust-Track is a userspace tool and doesn't require the installation of any propriety kernel modules. It leverages the iptables ip_conntrack module. 
+Linux Agent  which tracks and logs all incoming and outgoing TCP and UDP connections along with the name of the process and who owns the process. NoTrust-Track is a userspace tool and doesn't require the installation of any propriety kernel modules. It leverages the iptables ip_conntrack module.
 
 Currently it supports output to TCP and UDP Syslog, ElasticSearch and output to the NoTrust Server.
 
@@ -32,10 +32,10 @@ The settings are
 * __filters__ Defines the connections which NoTrust-Track should not report on.
   * __non_process_connections__ - By setting this to false, you will catch all connections, including multicast. This can be noisy and not particularly useful.
   * __dns_requests__ - By setting this to false, you will get all DNS look ups on 53 and 5353, this can be very noisy.
-  
+
   * __notrust_track_connections__ - By setting this to false we will report on connections which the NoTrust-Track daemon makes, if you have an output defined which is network based (i.e. ES, TCP, UDP Syslog) this can create a infinite loop of reporting =)
-  
-  
+
+
 ## Example of Output
 __Open Connection__ - When a connection is opened the following output is given,  the hash is derived by the properties of the connection and can be matched to the corresponding close.
 
@@ -51,7 +51,7 @@ __Open Connection__ - When a connection is opened the following output is given,
   "source_port" : 59325,
   "destination_port" : 80,
   "username" : "root",
-  "uid" : 0, 
+  "uid" : 0,
   "program_details" : {
     "inode" : 631905,
     "pid" : 656,
@@ -64,7 +64,7 @@ __Open Connection__ - When a connection is opened the following output is given,
 }
 ```
 
-__Close Connection__ 
+__Close Connection__
 ```javascript
 {
   "uuid":"b2f0281d-da73-4116-8639-8a1c693511b0",
@@ -80,13 +80,7 @@ __Close Connection__
 ```
 
 ## Notes
-In order for NoTrust-Track to work, it requires the ip_conntrack module to be loaded. If you find that no connections are being reported, please try running 
-
-```bash
-sudo modprobe ip_conntrack
-```
-
-And this should resolve it.  
+In order for NoTrust-Track to work, it requires the ip_conntrack module to be loaded.  This is added by default.
 
 As NoTrust-Track does NOT run as root by default, it requires the following capabilities to run:
 cap_sys_ptrace, cap_net_admin, cap_dac_read_search
@@ -96,3 +90,14 @@ These can be set by using
 ```bash  
 setcap 'cap_sys_ptrace,cap_net_admin,cap_dac_read_search=+ep' /usr/sbin/notrust-track
 ```
+
+Again this is done by default during the install.
+
+## Issues
+Please be aware this is a early version of a new project, please keep this in mind while deploying.
+
+On ubuntu 18.xx conntrack will not work without first using iptables, in order to enable conntrack you will need to add a iptables rule. For instance:
+```bash
+ sudo iptables -A INPUT -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT
+```
+And this should fix the issue.

@@ -8,8 +8,8 @@
 # Data directory
 directory: /usr/share/notrust
 outputs:
-#  syslog:
-#    - Localhost
+  syslog:
+    - Localhost
 #    - TCP:
 #        address: 127.0.0.1
 #        port: 601
@@ -17,7 +17,7 @@ outputs:
 #        address: 127.0.0.1
 #        port: 514
 #  elasticsearch: "http://<ES Server>:9200/<Index>"
-   notrust_endpoint: "http://10.60.4.182:8080"
+#  notrust_endpoint: "http://<NoTrust Server>
 
 filters:
   # If this is set to true it will include all connections, including multicast

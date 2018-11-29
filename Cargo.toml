@@ -41,7 +41,7 @@ arguments along side the user details who the process belongs to.
 
 NoTrack-Track can be configured to report through UDP, TCP or local Syslog currently.
 """
-maintainer-scripts = "install_scripts/deb"
+maintainer-scripts = "resources/deb"
 assets = [
   [ "target/release/notrust-track", "/usr/sbin/notrust-track", "0550" ],
   [ "resources/default_config/config.yaml", "/etc/notrust/config.yaml", "0644"],

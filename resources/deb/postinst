@@ -19,18 +19,20 @@ set -e
 
 
 case "$1" in
-
   configure)
-    # set up the capabilities needed to run.
-    setcap 'cap_sys_ptrace,cap_net_admin,cap_dac_read_search=+ep' /usr/sbin/notrust-track
+
 
     adduser --system notrust
     addgroup --system notrust
     sudo usermod -a -G notrust notrust
     chown notrust:notrust /usr/sbin/notrust-track
+    chown notrust:notrust -R /usr/share/notrust
 
     # For this to work we need to have the CAP_NET_ADMIN and CAP_DAC_READ_SEARCH, CAP_SYS_PTRACE
     setcap 'cap_sys_ptrace,cap_net_admin,cap_dac_read_search=+ep' /usr/sbin/notrust-track
+
+    # Add ip_conntrack to the modules list
+    echo "ip_conntrack" >> /etc/modules
 
     # set up the systemd service.
     if [ ! -L /etc/systemd/system/notrust-track.service ]; then
