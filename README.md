@@ -33,7 +33,48 @@ The settings are
   * __notrust_track_connections__ - By setting this to false we will report on connections which the NoTrust-Track daemon makes, if you have an output defined which is network based (i.e. ES, TCP, UDP Syslog) this can create a infinite loop of reporting =)
   
   
-  
+## Example of Output
+__Open Connection__ - When a connection is opened the following output is given,  the hash is derived by the properties of the connection and can be matched to the corresponding close.
+
+```javascript
+{
+  "uuid":"b2f0281d-da73-4116-8639-8a1c693511b0",
+  "agent":"b15da2a9-67dd-446c-82ce-9512174bc16f",
+  "hash" : 950265093776986234,
+  "timestamp" : "2018-10-22T10:40:34.763563458+00:00",
+  "protocol" : "TCP",
+  "source" : "172.16.144.102",
+  "destination" : "104.197.3.80",
+  "source_port" : 59325,
+  "destination_port" : 80,
+  "username" : "root",
+  "uid" : 0, 
+  "program_details" : {
+    "inode" : 631905,
+    "pid" : 656,
+    "process_name" : "NetworkManager",
+    "command_line" : [
+      "/usr/sbin/NetworkManager",
+      "--no-daemon"
+    ]
+  }
+}
+```
+
+__Close Connection__ 
+```javascript
+{
+  "uuid":"b2f0281d-da73-4116-8639-8a1c693511b0",
+  "agent":"b15da2a9-67dd-446c-82ce-9512174bc16f",
+  "hash" : 1334410269481100237,
+  "timestamp" : "2018-10-22T10:07:36.651838320+00:00",
+  "protocol" : "TCP",
+  "source" : "172.16.144.102",
+  "destination" : "104.198.143.177",
+  "source_port" : 50351,
+  "destination_port" : 80
+}
+```
 
 ## Notes
 In order for NoTrust-Track to work, it requires the ip_conntrack module to be loaded. If you find that no connections are being reported, please try running 
