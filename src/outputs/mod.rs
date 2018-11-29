@@ -79,6 +79,8 @@ pub fn create(config : &Config) -> Result<Vec<Box<Output>>, String> {
 #[cfg(test)]
 mod tests {
     use std::net::{ Ipv4Addr, TcpListener, UdpSocket };
+    use enums;
+    use filters;
 
     #[test]
     fn test_create_failed() {
@@ -94,10 +96,20 @@ mod tests {
             port: 7233
         });
 
-        let config = super::OutputsConfig {
-            syslog: Some(vec),
-            elasticsearch: None,
-            notrust_endpoint: None,
+        let config = enums::Config {
+            directory: None,
+            name: None,
+            uuid: None,
+            outputs: super::OutputsConfig {
+                syslog: Some(vec),
+                elasticsearch: None,
+                notrust_endpoint: None,
+            },
+            filters: filters::FiltersConfig {
+                non_process_connections : false,
+                dns_requests: false,
+                notrust_track_connections : false
+            }
         };
 
         let config = super::create(&config);
@@ -119,10 +131,21 @@ mod tests {
             address : Ipv4Addr::new(127, 0, 0, 1),
             port: 7232
         });
-        let config = super::OutputsConfig {
-            syslog: Some(vec),
-            elasticsearch: None,
-            notrust_endpoint: None,
+
+        let config = enums::Config {
+            directory: None,
+            name: None,
+            uuid: None,
+            outputs: super::OutputsConfig {
+                syslog: Some(vec),
+                elasticsearch: None,
+                notrust_endpoint: None,
+            },
+            filters: filters::FiltersConfig {
+                non_process_connections : false,
+                dns_requests: false,
+                notrust_track_connections : false
+            }
         };
 
         let config = super::create(&config);
