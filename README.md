@@ -8,7 +8,10 @@ Currently it supports output to TCP and UDP Syslog, ElasticSearch and output to 
 ## Installation
 
 ### Deb
-To install simply install the released debian package, it should in
+To install download the deb package and run:
+```bash
+dpkg -i notrust*.deb
+```
 
 
 ## Configuration
