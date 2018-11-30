@@ -1,4 +1,6 @@
 # NoTrust-Track
+[![Build Status](https://travis-ci.org/alisle/NoTrust-Track.svg?branch=master)](https://travis-ci.org/alisle/NoTrust-Track.svg) [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
+
 Linux Agent  which tracks and logs all incoming and outgoing TCP and UDP connections along with the name of the process and who owns the process. NoTrust-Track is a userspace tool and doesn't require the installation of any propriety kernel modules. It leverages the iptables ip_conntrack module.
 
 Currently it supports output to TCP and UDP Syslog, ElasticSearch and output to the NoTrust Server.
