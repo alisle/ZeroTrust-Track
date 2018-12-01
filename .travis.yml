@@ -11,3 +11,8 @@ matrix:
 
 cache: cargo
 
+addons:
+    apt:
+      - ubuntu-toolchain-r-test
+    packages:
+    - libmnl-dev
