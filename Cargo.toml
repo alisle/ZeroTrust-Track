@@ -1,5 +1,5 @@
 [package]
-name = "notrust-track"
+name = "zerotrust-track"
 version = "0.1.0"
 authors = ["Alex Lisle <alex.lisle@gmail.com>"]
 license-file = "LICENSE"
@@ -35,7 +35,7 @@ section = "security"
 priority = "optional"
 license-file = ["LICENSE", "0"]
 extended-description = """\
-NoTrust-Track is a userland daemon which monitors all incoming and outgoing
+ZeroTrust-Track is a userland daemon which monitors all incoming and outgoing
 TCP and UDP connections, when a connection is started or shutdown it reports what process created the socket along with it's
 arguments along side the user details who the process belongs to.
 
@@ -43,10 +43,10 @@ NoTrack-Track can be configured to report through UDP, TCP or local Syslog curre
 """
 maintainer-scripts = "resources/deb"
 assets = [
-  [ "target/release/notrust-track", "/usr/sbin/notrust-track", "0550" ],
-  [ "resources/default_config/config.yaml", "/etc/notrust/config.yaml", "0644"],
-  [ "resources/systemd/notrust-track.service", "/usr/share/notrust/systemd/notrust-track.service", "0644"],
-  [ "LICENSE", "/usr/share/notrust/LICENSE", "0644"],
-  [ "README.md", "/usr/share/notrust/README.md", "0644"],
-  [ "resources/names.txt", "/usr/share/notrust/names.txt", "0644"],
+  [ "target/release/zerotrust-track", "/usr/sbin/zerotrust-track", "0550" ],
+  [ "resources/default_config/config.yaml", "/etc/zerotrust/config.yaml", "0644"],
+  [ "resources/systemd/zerotrust-track.service", "/usr/share/zerotrust/systemd/zerotrust-track.service", "0644"],
+  [ "LICENSE", "/usr/share/zerotrust/LICENSE", "0644"],
+  [ "README.md", "/usr/share/zerotrust/README.md", "0644"],
+  [ "resources/names.txt", "/usr/share/zerotrust/names.txt", "0644"],
 ]

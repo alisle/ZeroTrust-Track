@@ -6,7 +6,7 @@
 # uuid:
 
 # Data directory
-directory: /usr/share/notrust
+directory: /usr/share/zerotrust
 outputs:
   syslog:
     - Localhost
@@ -17,7 +17,7 @@ outputs:
 #        address: 127.0.0.1
 #        port: 514
 #  elasticsearch: "http://<ES Server>:9200/<Index>"
-#  notrust_endpoint: "http://<NoTrust Server>
+#  zerotrust_endpoint: "http://<zerotrust Server>
 
 filters:
   # If this is set to true it will include all connections, including multicast
@@ -27,6 +27,6 @@ filters:
   # alot of noise.
   dns_requests : true
 
-  # If this is enabled then we will report when notrust-track makes an outbound connection, if you're
+  # If this is enabled then we will report when zerotrust-track makes an outbound connection, if you're
   # using an output which isn't local, this can create a loop of reporting.
-  notrust_track_connections: true
+  zerotrust_track_connections: true

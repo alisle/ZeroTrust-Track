@@ -15,17 +15,17 @@
  */
 
 extern crate clap;
-extern crate notrust_track;
+extern crate zerotrust_track;
 extern crate simple_logger;
 
 #[macro_use]
 extern crate log;
 use log::Level;
 use clap::{Arg, App};
-use notrust_track::{NoTrack};
+use zerotrust_track::{NoTrack};
 
 fn main() {
-    let matches = App::new("NoTrust Tracker")
+    let matches = App::new("ZeroTrust Tracker")
         .version("1.0")
         .author("Alex Lisle <alex.lisle@gmail.com>")
         .about("Tracks all incoming and outgoing TCP/UDP Connections and their corresponding processes and users who launched them")
@@ -56,7 +56,7 @@ fn main() {
         3 | _ => simple_logger::init_with_level(Level::Trace).unwrap(),
     };
 
-    let config = matches.value_of("config").unwrap_or("/etc/notrust/config.yaml");
+    let config = matches.value_of("config").unwrap_or("/etc/zerotrust/config.yaml");
     let data_directory = matches.value_of("data_directory");
 
     info!("loading config: {}", config);

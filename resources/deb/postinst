@@ -1,5 +1,5 @@
 #!/bin/sh
-# postinst script for notrust-track
+# postinst script for zerotrust-track
 #
 # see: dh_installdeb(1)
 
@@ -22,29 +22,29 @@ case "$1" in
   configure)
 
 
-    adduser --system notrust
-    addgroup --system notrust
-    sudo usermod -a -G notrust notrust
-    chown notrust:notrust /usr/sbin/notrust-track
-    chown notrust:notrust -R /usr/share/notrust
+    adduser --system zerotrust
+    addgroup --system zerotrust
+    sudo usermod -a -G zerotrust zerotrust
+    chown zerotrust:zerotrust /usr/sbin/zerotrust-track
+    chown zerotrust:zerotrust -R /usr/share/zerotrust
 
     # For this to work we need to have the CAP_NET_ADMIN and CAP_DAC_READ_SEARCH, CAP_SYS_PTRACE
-    setcap 'cap_sys_ptrace,cap_net_admin,cap_dac_read_search=+ep' /usr/sbin/notrust-track
+    setcap 'cap_sys_ptrace,cap_net_admin,cap_dac_read_search=+ep' /usr/sbin/zerotrust-track
 
     # Add ip_conntrack to the modules list
     echo "ip_conntrack" >> /etc/modules
 
     # set up the systemd service.
-    if [ ! -L /etc/systemd/system/notrust-track.service ]; then
-      systemctl link /usr/share/notrust/systemd/notrust-track.service
-      systemctl enable notrust-track.service
-      systemctl start  notrust-track.service
+    if [ ! -L /etc/systemd/system/zerotrust-track.service ]; then
+      systemctl link /usr/share/zerotrust/systemd/zerotrust-track.service
+      systemctl enable zerotrust-track.service
+      systemctl start  zerotrust-track.service
     else
       systemctl daemon-reload
     fi
 
-    if [ ! -d "/usr/share/notrust" ]; then
-      chown -R notrust:notrust /usr/share/notrust
+    if [ ! -d "/usr/share/zerotrust" ]; then
+      chown -R zerotrust:zerotrust /usr/share/zerotrust
     fi
   ;;
 

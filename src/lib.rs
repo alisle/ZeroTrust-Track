@@ -333,7 +333,7 @@ mod tests {
     use uuid::Uuid;
 
     fn config_string() -> String {
-        let string = String::from("---\ndirectory: /tmp\noutputs:\n  syslog: []\nfilters:\n  non_process_connections: true\n  dns_requests : true\n  notrust_track_connections: true");
+        let string = String::from("---\ndirectory: /tmp\noutputs:\n  syslog: []\nfilters:\n  non_process_connections: true\n  dns_requests : true\n  zerotrust_track_connections: true");
         return string;
     }
 
@@ -341,7 +341,7 @@ mod tests {
         FiltersConfig {
             non_process_connections: true,
             dns_requests : true,
-            notrust_track_connections: true,
+            zerotrust_track_connections: true,
         }
     }
 
@@ -351,7 +351,7 @@ mod tests {
             name: None,
             uuid: None,
             outputs : OutputsConfig {
-                notrust_endpoint: None,
+                zerotrust_endpoint: None,
                 syslog : Some(Vec::new()),
                 elasticsearch : None,
             },

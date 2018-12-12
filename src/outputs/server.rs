@@ -69,7 +69,7 @@ fn send_connection(open_url : &str, close_url: &str, message : MessageType) {
 
     match post(&connection, url) {
         Err(err) => error!("{}", err),
-        Ok(()) => info!("successfully sent connection to notrust server"),
+        Ok(()) => info!("successfully sent connection to zerotrust server"),
     };
 }
 

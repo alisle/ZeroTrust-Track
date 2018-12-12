@@ -1,4 +1,4 @@
-# /etc/systemd/system/notrust-track.service
+# /etc/systemd/system/zerotrust-track.service
 
 [Unit]
 Description=Monitor all network connections by user and processes
@@ -6,13 +6,13 @@ After=network.target
 
 [Service]
 Type=simple
-WorkingDirectory=/usr/share/notrust
-ExecStart=/usr/sbin/notrust-track
+WorkingDirectory=/usr/share/zerotrust
+ExecStart=/usr/sbin/zerotrust-track
 ExecReload=/bin/kill -HUP $MAINPID
 KillMode=process
 Restart=on-failure
-User=notrust
-Group=notrust
+User=zerotrust
+Group=zerotrust
 
 # We require ip_conntrack module to be loaded.
 [Install]

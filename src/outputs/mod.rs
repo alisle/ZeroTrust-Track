@@ -28,7 +28,7 @@ mod server;
 pub struct OutputsConfig {
     pub syslog : Option<Vec<SyslogConfig>>,
     pub elasticsearch : Option<String>,
-    pub notrust_endpoint : Option<String>,
+    pub zerotrust_endpoint : Option<String>,
 }
 
 pub trait Output {
@@ -67,7 +67,7 @@ pub fn create(config : &Config) -> Result<Vec<Box<Output>>, String> {
             outputs.push(Box::new(elasticsearch));
         }
 
-        if let Some(ref endpoint_config) = config.outputs.notrust_endpoint {
+        if let Some(ref endpoint_config) = config.outputs.zerotrust_endpoint {
             info!("adding server output: {} / {:?} / {:?}", endpoint_config, config.name, config.uuid);
             let server = Server::new(&config.name, &config.uuid, endpoint_config)?;
             outputs.push(Box::new(server));
@@ -103,12 +103,12 @@ mod tests {
             outputs: super::OutputsConfig {
                 syslog: Some(vec),
                 elasticsearch: None,
-                notrust_endpoint: None,
+                zerotrust_endpoint: None,
             },
             filters: filters::FiltersConfig {
                 non_process_connections : false,
                 dns_requests: false,
-                notrust_track_connections : false
+                zerotrust_track_connections : false
             }
         };
 
@@ -139,12 +139,12 @@ mod tests {
             outputs: super::OutputsConfig {
                 syslog: Some(vec),
                 elasticsearch: None,
-                notrust_endpoint: None,
+                zerotrust_endpoint: None,
             },
             filters: filters::FiltersConfig {
                 non_process_connections : false,
                 dns_requests: false,
-                notrust_track_connections : false
+                zerotrust_track_connections : false
             }
         };
 

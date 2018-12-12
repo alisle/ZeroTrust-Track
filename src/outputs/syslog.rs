@@ -151,7 +151,7 @@ fn create_formatter() -> Formatter3164 {
             Ok(name) => Some(name.to_string()),
             _ => None
         },
-        process: "notrust-tracker".into(),
+        process: "zerotrust-track".into(),
         pid: unsafe { getpid() },
     };
 }

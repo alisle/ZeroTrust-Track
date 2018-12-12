@@ -1,4 +1,4 @@
-systemctl stop notrust-track.service
-systemctl disable notrust-track.service
-deluser --system notrust
-delgroup --system notrust
+systemctl stop zerotrust-track.service
+systemctl disable zerotrust-track.service
+deluser --system zerotrust
+delgroup --system zerotrust

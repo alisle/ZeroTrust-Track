@@ -22,7 +22,7 @@ use parser::{ Payload };
  pub struct FiltersConfig {
      pub non_process_connections : bool,
      pub dns_requests : bool,
-     pub notrust_track_connections: bool,
+     pub zerotrust_track_connections: bool,
  }
 
 #[derive(Clone)]
@@ -51,7 +51,7 @@ impl Filter {
                     return true;
                 }
 
-                if self.config.notrust_track_connections {
+                if self.config.zerotrust_track_connections {
                     if let Some(ref details) = connection.program_details {
                         if details.pid == self.pid {
                             trace!("dropping payload is the pid is the same as ours");
@@ -149,7 +149,7 @@ mod tests {
         FiltersConfig {
             non_process_connections: true,
             dns_requests : true,
-            notrust_track_connections: true,
+            zerotrust_track_connections: true,
         }
     }
 
@@ -223,9 +223,9 @@ mod tests {
 
 
     #[test]
-    fn test_filter_notrust_track_connections_true() {
+    fn test_filter_zerotrust_track_connections_true() {
         let mut filter = Filter::new(FiltersConfig {
-            notrust_track_connections : true,
+            zerotrust_track_connections : true,
            .. default_filters()
         }).unwrap();
 
@@ -240,9 +240,9 @@ mod tests {
     }
 
     #[test]
-    fn test_filter_notrust_track_connections_false() {
+    fn test_filter_zerotrust_track_connections_false() {
         let mut filter = Filter::new(FiltersConfig {
-            notrust_track_connections : false,
+            zerotrust_track_connections : false,
            .. default_filters()
         }).unwrap();
 
