@@ -30,7 +30,7 @@ impl State {
 
         Ok(state)
     }
-
+    
     pub fn transform(&mut self, payload: Payload) -> Payload {
         match payload {
             Payload::Open(connection )=> {
@@ -68,7 +68,7 @@ mod tests {
                 &22
             ) as i64,
             uuid: None,
-            agent: Uuid::new_v4(),            
+            agent: Uuid::new_v4(),
             timestamp: Utc::now().to_rfc3339(),
             protocol: Protocol::TCP,
             source_port : 22,

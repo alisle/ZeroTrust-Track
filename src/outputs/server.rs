@@ -23,6 +23,10 @@ use reqwest::{ StatusCode };
 use reqwest::header::{ CONTENT_TYPE };
 use uuid::Uuid;
 use serde_json;
+use ipnetwork::IpNetwork;
+use std::net::Ipv4Addr;
+
+
 
 enum MessageType {
     Open(String),
@@ -32,7 +36,13 @@ enum MessageType {
 #[derive(Debug, Serialize, Deserialize)]
 struct OpenMessage {
     uuid: Option<Uuid>,
-    name: Option<String>
+    name: Option<String>,
+    interfaces : Vec<Ipv4Addr>
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+struct InterfaceMessage {
+    interfaces: Vec<Ipv4Addr>
 }
 
 pub struct Server {
@@ -83,12 +93,62 @@ fn open_connection(url: &str, open_message: OpenMessage) -> Result<(), String>{
     post(&open_message, url)
 }
 
+
+fn get_interfaces() ->  Vec<Ipv4Addr>{
+    let mut interfaces : Vec<Ipv4Addr> = Vec::new();
+
+    for interface in pnet::datalink::interfaces() {
+        for address in interface.ips {
+            if let IpNetwork::V4(network) = address {
+                let ip = network.ip();
+                if !ip.is_loopback() {
+                    interfaces.push(ip);
+                }
+            }
+        }
+    }
+    interfaces
+}
+
+
+fn send_interfaces(url: &str, interfaces_message: InterfaceMessage) -> Result<(), String> {
+    let interfaces_message = match serde_json::to_string(&interfaces_message) {
+        Ok(x) => x,
+        Err(_err) => return Err(String::from("unable to serialize the interface_mesage!")),
+    };
+
+    info!("sending interface information to URL: {} with payload: \"{}\"", url, interfaces_message);
+    post(&interfaces_message, url)
+}
+
+
+fn create_interface_scheduled_call(minutes : i64, url: &str)  {
+    let url : String = String::from(url);
+    let timer : timer::Timer = timer::Timer::new();
+    debug!("setting timer to {}", minutes);
+    timer.schedule_repeating(chrono::Duration::minutes(minutes), move || {
+        let interfaces = get_interfaces();
+        debug!("getting interfaces");
+        debug!("found IPs: {:?}", interfaces);
+        let interface_message =  InterfaceMessage {
+            interfaces
+        };
+
+        match send_interfaces(&url, interface_message) {
+            Ok(()) => info!("successfully send interface information"),
+            Err(_err) => error!("unable to update the interface information")
+        };
+    });
+}
+
+
 impl Server {
     pub fn new(name: &Option<String>, uuid: &Option<Uuid>, url: &str) -> Result<Server, String> {
 
         let open_message =  OpenMessage {
             name: name.clone(),
-            uuid: uuid.clone()
+            uuid: uuid.clone(),
+            interfaces: get_interfaces(),
         };
 
         let open_connection_url = format!("{}/agents/online", url);
@@ -97,8 +157,16 @@ impl Server {
             Err(err) => return Err(err),
         };
 
+        if let Some(uuid) = uuid {
+            let interface_url = format!("{}/agents/{}/interfaces", url, uuid);
+            create_interface_scheduled_call(30, &interface_url);
+        } else {
+            warn!("unable to send interface details as uuid isn't set");
+        }
+
         let open_url = format!("{}/connections/open", url);
         let close_url = format!("{}/connections/close", url);
+
 
         let (tx, rx) = channel();
 
@@ -115,9 +183,10 @@ impl Server {
         });
 
         Ok(Server {
-            tx
+            tx,
         })
     }
+
 }
 
 impl Output for Server {
@@ -129,4 +198,15 @@ impl Output for Server {
         let _ = self.tx.send(MessageType::Close(message.to_string()));
     }
 
+}
+
+#[cfg(test)]
+mod tests {
+
+    use super::*;
+
+    #[test]
+    fn test_get_interfaces() {
+        get_interfaces();
+    }
 }

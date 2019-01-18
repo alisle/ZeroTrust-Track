@@ -17,7 +17,7 @@
 use std::io;
 use std::collections::HashMap;
 use procfs;
-use procfs::{FDTarget, ProcResult, Process};
+use procfs::{FDTarget, Process};
 use libc::pid_t;
 
 pub struct Proc {
@@ -38,7 +38,7 @@ impl Proc {
         let processes = procfs::all_processes();
         let mut map: HashMap<u32, pid_t> = HashMap::new();
         for process in &processes {
-            if let ProcResult::Ok(fds) = process.fd() {
+            if let Result::Ok(fds) = process.fd() {
                 for fd in fds {
                     if let FDTarget::Socket(inode) = fd.target {
                         map.insert(inode, process.pid());
@@ -59,7 +59,7 @@ impl Proc {
         match self.map.get(&inode) {
             Some(pid) => {
                 match Process::new(*pid) {
-                    ProcResult::Ok(process) => Some(process),
+                    Result::Ok(process) => Some(process),
                     _ => None
                 }
             },

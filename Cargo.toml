@@ -13,7 +13,7 @@ libc = "0.2"
 log = "0.4"
 simple_logger = "0.5"
 users = "0.7"
-procfs = "0.3"
+procfs = "^0.4"
 clap = "^2.3"
 syslog = "^4.0"
 sys-info = "*"
@@ -26,6 +26,10 @@ reqwest = "^0.9"
 tempfile = "^3"
 chrono = { version = "0.4", features = ["serde"] }
 rand = "^0.5"
+pnet = "0.21.0"
+ipnetwork = "^0.12"
+timer = "^0.2.0"
+
 
 [package.metadata.deb]
 maintainer = "Alex Lisle <alex.lisle@gmail.com>"
