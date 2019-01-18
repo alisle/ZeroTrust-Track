@@ -1,5 +1,5 @@
 # ZeroTrust-Track
-[![Build Status](https://travis-ci.org/alisle/zerotrust-Track.svg?branch=master)](https://travis-ci.org/alisle/ZerOtrust-Track.svg) [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
+[![Build Status](https://api.travis-ci.org/alisle/ZeroTrust-Track.svg?branch=master)](https://travis-ci.org/alisle/ZeroTrust-Track.svg) [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 
 Linux Agent  which tracks and logs all incoming and outgoing TCP and UDP connections along with the name of the process and who owns the process. ZeroTrust-Track is a userspace tool and doesn't require the installation of any propriety kernel modules. It leverages the iptables ip_conntrack module.
 
