@@ -166,7 +166,7 @@ impl Server {
             Some(uuid) => {
                 debug!("creating callback guard");
                 let interface_url = format!("{}/agents/{}/interfaces", url, uuid);
-                Some(create_interface_scheduled_call(&timer, 1, &interface_url))
+                Some(create_interface_scheduled_call(&timer, 30, &interface_url))
             },
             None => {
                 warn!("unable to send interface details as uuid isn't set");
