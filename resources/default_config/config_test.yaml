@@ -9,7 +9,7 @@
 directory: /usr/share/zerotrust
 outputs:
   syslog:
-    - Localhost
+#    - Localhost
 #    - TCP:
 #        address: 127.0.0.1
 #        port: 601
@@ -17,7 +17,7 @@ outputs:
 #        address: 127.0.0.1
 #        port: 514
 #  elasticsearch: "http://<ES Server>:9200/<Index>"
-#  zerotrust_endpoint: "http://<zerotrust Server>"
+  zerotrust_endpoint: "http://127.0.0.1:8080"
 
 filters:
   # If this is set to true it will include all connections, including multicast

@@ -47,6 +47,8 @@ struct InterfaceMessage {
 
 pub struct Server {
     tx: Sender<MessageType>,
+    timer: timer::Timer,
+    interface_update_guard : Option<timer::Guard>,
 }
 
 fn post(payload: &str, url: &str) -> Result<(), String> {
@@ -122,9 +124,8 @@ fn send_interfaces(url: &str, interfaces_message: InterfaceMessage) -> Result<()
 }
 
 
-fn create_interface_scheduled_call(minutes : i64, url: &str)  {
+fn create_interface_scheduled_call(timer: &timer::Timer, minutes : i64, url: &str) -> timer::Guard  {
     let url : String = String::from(url);
-    let timer : timer::Timer = timer::Timer::new();
     debug!("setting timer to {}", minutes);
     timer.schedule_repeating(chrono::Duration::minutes(minutes), move || {
         let interfaces = get_interfaces();
@@ -138,34 +139,40 @@ fn create_interface_scheduled_call(minutes : i64, url: &str)  {
             Ok(()) => info!("successfully send interface information"),
             Err(_err) => error!("unable to update the interface information")
         };
-    });
+    })
 }
 
 
 impl Server {
     pub fn new(name: &Option<String>, uuid: &Option<Uuid>, url: &str) -> Result<Server, String> {
-
+        let timer : timer::Timer = timer::Timer::new();
         let open_message =  OpenMessage {
             name: name.clone(),
             uuid: uuid.clone(),
             interfaces: get_interfaces(),
         };
 
+
+        let open_url = format!("{}/connections/open", url);
+        let close_url = format!("{}/connections/close", url);
         let open_connection_url = format!("{}/agents/online", url);
+
         match open_connection(&open_connection_url, open_message) {
             Ok(()) => info!("successfully opened agent on server"),
             Err(err) => return Err(err),
         };
 
-        if let Some(uuid) = uuid {
-            let interface_url = format!("{}/agents/{}/interfaces", url, uuid);
-            create_interface_scheduled_call(30, &interface_url);
-        } else {
-            warn!("unable to send interface details as uuid isn't set");
-        }
-
-        let open_url = format!("{}/connections/open", url);
-        let close_url = format!("{}/connections/close", url);
+        let interface_update_guard = match uuid {
+            Some(uuid) => {
+                debug!("creating callback guard");
+                let interface_url = format!("{}/agents/{}/interfaces", url, uuid);
+                Some(create_interface_scheduled_call(&timer, 1, &interface_url))
+            },
+            None => {
+                warn!("unable to send interface details as uuid isn't set");
+                None
+            }
+        };
 
 
         let (tx, rx) = channel();
@@ -184,6 +191,8 @@ impl Server {
 
         Ok(Server {
             tx,
+            timer,
+            interface_update_guard
         })
     }
 
