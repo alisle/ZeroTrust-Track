@@ -32,8 +32,9 @@ pub struct OutputsConfig {
 }
 
 pub trait Output {
-    fn process_open_connection(&mut self, &str);
-    fn process_close_connection(&mut self, &str);
+    fn process_open_connection(&self, &str);
+    fn process_close_connection(&self, &str);
+    fn process_alive_connections(&self, &Vec<i64>);
 }
 
 

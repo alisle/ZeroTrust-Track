@@ -73,14 +73,15 @@ impl Elasticsearch {
 }
 
 impl Output for Elasticsearch {
-    fn process_open_connection(&mut self, message: &str) {
+    fn process_open_connection(&self, message: &str) {
         let _ = self.tx.send(message.to_string());
     }
 
-    fn process_close_connection(&mut self, message: &str) {
+    fn process_close_connection(&self, message: &str) {
         let _ = self.tx.send(message.to_string());
     }
 
+    fn process_alive_connections(&self, _ : &Vec<i64>) { }
 }
 
 #[cfg(test)]

@@ -44,16 +44,21 @@ extern crate timer;
 use std::sync::mpsc::Sender;
 use std::sync::mpsc::Receiver;
 use std::sync::mpsc::channel;
+use std::sync::mpsc::RecvTimeoutError;
+
 use std::thread;
 use std::fs::File;
 use std::path::Path;
 use std::io::prelude::*;
+use std::time::{ Duration, Instant };
+
 use parser::{ Parser, Payload };
 use conn_track::Conntrack;
 use rand::Rng;
 use enums::{ Config };
 use filters::{ Filter };
 use state::{ State };
+
 mod conn_track;
 mod proc_chomper;
 mod parser;
@@ -159,40 +164,60 @@ impl NoTrack {
             Err(_err) => return Err(String::from("unable to start the state module")),
         };
 
-
         thread::spawn(move || {
             info!("starting conntrack");
             tracker.start(&mut tx);
         });
 
+        let duration = Duration::from_secs(60);
+        let mut time = Instant::now();
+        let mut finished = false;
 
         info!("starting main loop");
-        loop {
-            if let Ok(con) = rx.recv() {
-                trace!("recieved {:?} from channel, parsing", con);
-                if let Some(payload) = parser.parse(con) {
-                    if ! self.filter.apply(&payload) {
-                        let payload = state.transform(payload);
-                        let json = match payload {
-                            Payload::Open(ref connection)  => serde_json::to_string(connection).unwrap(),
-                            Payload::Close(ref connection) => serde_json::to_string(connection).unwrap(),
-                        };
+        while !finished {
+            match rx.recv_timeout(duration) {
+                Ok(con) => {
+                    trace!("received {:?} from channel, parsing", con);
+                    if let Some(payload) = parser.parse(con) {
+                        if ! self.filter.apply(&payload) {
+                            let payload = state.transform(payload);
+                            let json = match payload {
+                                Payload::Open(ref connection)  => serde_json::to_string(connection).unwrap(),
+                                Payload::Close(ref connection) => serde_json::to_string(connection).unwrap(),
+                            };
 
-                        trace!("created json payload: {}", json);
-                        for output in &mut self.outputs {
-                            match payload {
-                                Payload::Open(_) => output.process_open_connection(&json),
-                                Payload::Close(_) => output.process_close_connection(&json),
-                             }
+                            trace!("created json payload: {}", json);
+                            for output in &self.outputs {
+                                match payload {
+                                    Payload::Open(_) => output.process_open_connection(&json),
+                                    Payload::Close(_) => output.process_close_connection(&json),
+                                }
+                            }
                         }
+                    } else {
+                        debug!("received none, dropping packet");
                     }
-                } else {
-                    debug!("recieved none, dropping packet");
+                },
+                Err(err) => {
+                    match err {
+                        RecvTimeoutError::Disconnected => { finished = true; },
+                        RecvTimeoutError::Timeout => (),
+                    }
                 }
-            } else {
-                warn!("closing application");
-                break;
             }
+
+            if time.elapsed() >= duration {
+                trace!("sending alive connections");
+                let alive_connections = state.connections();
+                for output in &self.outputs {
+                    output.process_alive_connections(&alive_connections);
+                }
+
+                time = Instant::now();
+            }
+
+
+
         }
 
         Ok(())

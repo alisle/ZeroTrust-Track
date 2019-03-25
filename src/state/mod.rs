@@ -45,6 +45,16 @@ impl State {
            }
        }
     }
+
+    pub fn connections(&self) -> Vec<i64> {
+        let mut keys : Vec<i64> = vec!();
+
+        for (hash, _) in &self.connections {
+            keys.push(*hash);
+        }
+
+        keys
+    }
 }
 
 

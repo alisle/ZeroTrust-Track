@@ -29,6 +29,7 @@ use std::net::Ipv4Addr;
 
 
 enum MessageType {
+    OpenHashes(Vec<i64>),
     Open(String),
     Close(String),
 }
@@ -45,6 +46,7 @@ struct InterfaceMessage {
     interfaces: Vec<Ipv4Addr>
 }
 
+#[allow(dead_code)]
 pub struct Server {
     tx: Sender<MessageType>,
     timer: timer::Timer,
@@ -73,13 +75,9 @@ fn post(payload: &str, url: &str) -> Result<(), String> {
     }
 }
 
-fn send_connection(open_url : &str, close_url: &str, message : MessageType) {
-    let (url, connection) = match message {
-        MessageType::Open(connection) => (open_url, connection),
-        MessageType::Close(connection) => (close_url, connection),
-    };
 
-    match post(&connection, url) {
+fn send_data(url : &str, message : &str) {
+    match post(&message, url) {
         Err(err) => error!("{}", err),
         Ok(()) => info!("successfully sent connection to zerotrust server"),
     };
@@ -156,6 +154,7 @@ impl Server {
         let open_url = format!("{}/connections/open", url);
         let close_url = format!("{}/connections/close", url);
         let open_connection_url = format!("{}/agents/online", url);
+        let mut hashes_url : Option<String> = None;
 
         match open_connection(&open_connection_url, open_message) {
             Ok(()) => info!("successfully opened agent on server"),
@@ -166,6 +165,7 @@ impl Server {
             Some(uuid) => {
                 debug!("creating callback guard");
                 let interface_url = format!("{}/agents/{}/interfaces", url, uuid);
+                hashes_url = Some(format!("{}/agents/{}/alive-connections", url, uuid));
                 Some(create_interface_scheduled_call(&timer, 30, &interface_url))
             },
             None => {
@@ -180,7 +180,18 @@ impl Server {
         thread::spawn(move || {
             loop {
                 match rx.recv() {
-                    Ok(message) => send_connection(&open_url, &close_url, message),
+                    Ok(message) => {
+                        match message {
+                            MessageType::Open(connection) => { send_data(&open_url, &connection); },
+                            MessageType::Close(connection) => { send_data(&close_url, &connection); },
+                            MessageType::OpenHashes(hashes) => {
+                                let hashes = serde_json::to_string(&hashes).unwrap();
+                                if let Some(ref url) = hashes_url {
+                                    send_data(&url, &hashes);
+                                }
+                            }
+                        };
+                    },
                     Err(err) => {
                         error!("closing thread: {}", err);
                         break;
@@ -199,12 +210,16 @@ impl Server {
 }
 
 impl Output for Server {
-    fn process_open_connection(&mut self, message: &str) {
+    fn process_open_connection(&self, message: &str) {
         let _ = self.tx.send(MessageType::Open(message.to_string()));
     }
 
-    fn process_close_connection(&mut self, message: &str) {
+    fn process_close_connection(&self, message: &str) {
         let _ = self.tx.send(MessageType::Close(message.to_string()));
+    }
+
+    fn process_alive_connections(&self, connections: &Vec<i64>) {
+        let _ = self.tx.send(MessageType::OpenHashes(connections.clone()));
     }
 
 }
