@@ -29,6 +29,7 @@ rand = "^0.5"
 pnet = "0.21.0"
 ipnetwork = "^0.12"
 timer = "^0.2.0"
+hostname = "^0.1"
 
 
 [package.metadata.deb]

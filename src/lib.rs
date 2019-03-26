@@ -39,6 +39,7 @@ extern crate serde_yaml;
 extern crate rand;
 extern crate tempfile;
 extern crate timer;
+extern crate hostname;
 
 
 use std::sync::mpsc::Sender;
@@ -58,6 +59,7 @@ use rand::Rng;
 use enums::{ Config };
 use filters::{ Filter };
 use state::{ State };
+use hostname::get_hostname;
 
 mod conn_track;
 mod proc_chomper;
@@ -316,12 +318,20 @@ fn populate_config(config: Config) -> Config {
             let name = match tuple.name {
                 Some(name) => name,
                 None => {
-                    let name = match rand::thread_rng().choose(&names) {
+                    let name = match get_hostname() {
                         Some(name) => name.clone(),
-                        None => String::from("unknown"),
+                        None => {
+                            let name = match rand::thread_rng().choose(&names) {
+                                Some(name) => name.clone(),
+                                None => String::from("unknown"),
+                            };
+
+                            name
+                        }
                     };
 
                     name
+
                 },
             };
 
